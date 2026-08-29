@@ -1,0 +1,24 @@
+{
+  "name": "Si-BimAk - Sistem Informasi Bimbingan Akademik",
+  "short_name": "Si-BimAk",
+  "description": "Sistem Informasi Bimbingan Akademik Perguruan Tinggi",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "icons": [
+    {
+      "src": "/assets/logo-unpam.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/logo-unpam.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
