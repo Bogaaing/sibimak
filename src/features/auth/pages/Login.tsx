@@ -48,9 +48,11 @@ export const Login: React.FC = () => {
       <div className="w-full max-w-md z-10 space-y-6">
         {/* Brand header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 items-center justify-center text-white shadow-xl shadow-blue-500/30 mb-2">
-            <Sparkles className="w-6 h-6" />
-          </div>
+          <img
+            src="/assets/app-logo.png"
+            alt="Si-BimAk"
+            className="inline-flex w-14 h-14 rounded-2xl object-contain shadow-lg mb-2"
+          />
           <h1 className="text-2xl font-black text-white tracking-tight">Si-BimAk</h1>
           <p className="text-xs text-slate-400 font-medium">Sistem Informasi Bimbingan Akademik</p>
         </div>

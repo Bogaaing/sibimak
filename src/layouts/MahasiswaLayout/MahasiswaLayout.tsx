@@ -11,9 +11,11 @@ export const MahasiswaLayout: React.FC = () => {
       {/* 1. TOP MOBILE HEADER */}
       <header className="no-print bg-white border-b border-slate-200/90 h-[58px] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-xs flex-shrink-0">
-            SB
-          </div>
+          <img
+            src="/assets/app-logo.png"
+            alt="Si-BimAk"
+            className="w-7 h-7 rounded-lg object-contain flex-shrink-0 shadow-xs"
+          />
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-tight truncate">
               Si-BimAk

@@ -37,9 +37,11 @@ export const AdminLayout: React.FC = () => {
       >
         {/* Brand Area */}
         <div className="h-[64px] px-5 flex items-center gap-3 border-b border-[#1a2337]">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-xs flex-shrink-0 tracking-wide">
-            SB
-          </div>
+          <img
+            src="/assets/app-logo.png"
+            alt="Si-BimAk"
+            className="w-8 h-8 rounded-lg object-contain flex-shrink-0 shadow-xs"
+          />
           <div className="min-w-0">
             <h1 className="text-[15px] font-bold text-white tracking-tight leading-tight truncate">
               Si-BimAk
