@@ -1,10 +1,18 @@
 import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
-import { House, BookOpenCheck, MessagesSquare, UserRound, Bell } from 'lucide-react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { House, BookOpenCheck, MessagesSquare, UserRound, Bell, LogOut } from 'lucide-react';
 import { store } from '../../lib/store';
+import { useAuth } from '../../hooks/useAuth';
 
 export const MahasiswaLayout: React.FC = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const activeYear = store.getActiveAcademicYear();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-900 font-sans pb-[76px]">
@@ -23,7 +31,7 @@ export const MahasiswaLayout: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <span className="hidden xs:inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
             {activeYear?.name ? activeYear.name.split(' ')[2] || 'Ganjil' : 'Ganjil'}
           </span>
@@ -34,6 +42,15 @@ export const MahasiswaLayout: React.FC = () => {
           >
             <Bell className="w-4 h-4 stroke-[1.8]" />
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+          </button>
+
+          <button
+            onClick={handleLogout}
+            title="Keluar dari Akun"
+            className="flex items-center gap-1 p-1.5 px-2 rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-600 transition-colors shadow-2xs text-xs font-semibold"
+          >
+            <LogOut className="w-3.5 h-3.5 stroke-[1.8]" />
+            <span className="hidden sm:inline">Keluar</span>
           </button>
         </div>
       </header>
