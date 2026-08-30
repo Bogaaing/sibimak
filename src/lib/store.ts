@@ -120,6 +120,20 @@ class AppDataStore {
     return newYear;
   }
 
+  setActiveAcademicYear(id: string): void {
+    const years = this.getAcademicYears();
+    years.forEach(y => {
+      y.is_active = y.id === id;
+    });
+    setStorage(STORAGE_KEYS.ACADEMIC_YEARS, years);
+  }
+
+  deleteAcademicYear(id: string): void {
+    let years = this.getAcademicYears();
+    years = years.filter(y => y.id !== id);
+    setStorage(STORAGE_KEYS.ACADEMIC_YEARS, years);
+  }
+
   // Classes
   getClasses(): ClassItem[] {
     const classes = getStorage<ClassItem[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
@@ -151,6 +165,12 @@ class AppDataStore {
     classes.push(newClass);
     setStorage(STORAGE_KEYS.CLASSES, classes);
     return newClass;
+  }
+
+  deleteClass(id: string): void {
+    let classes = getStorage<ClassItem[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
+    classes = classes.filter(c => c.id !== id);
+    setStorage(STORAGE_KEYS.CLASSES, classes);
   }
 
   // Lecturers
@@ -221,6 +241,16 @@ class AppDataStore {
     return newLec;
   }
 
+  deleteLecturer(id: string): void {
+    let lecturers = getStorage<Lecturer[]>(STORAGE_KEYS.LECTURERS, INITIAL_LECTURERS);
+    lecturers = lecturers.filter(l => l.id !== id);
+    setStorage(STORAGE_KEYS.LECTURERS, lecturers);
+
+    let profiles = this.getProfiles();
+    profiles = profiles.filter(p => p.id !== id);
+    setStorage(STORAGE_KEYS.PROFILES, profiles);
+  }
+
   // Students
   getStudents(): (Student & { profile: Profile; class?: ClassItem })[] {
     const students = getStorage<Student[]>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
@@ -289,6 +319,16 @@ class AppDataStore {
     return newStudent;
   }
 
+  deleteStudent(id: string): void {
+    let students = getStorage<Student[]>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+    students = students.filter(s => s.id !== id);
+    setStorage(STORAGE_KEYS.STUDENTS, students);
+
+    let profiles = this.getProfiles();
+    profiles = profiles.filter(p => p.id !== id);
+    setStorage(STORAGE_KEYS.PROFILES, profiles);
+  }
+
   // Advisor Assignments
   getAssignments(): ClassAdvisorAssignment[] {
     const assignments = getStorage<ClassAdvisorAssignment[]>(STORAGE_KEYS.ASSIGNMENTS, INITIAL_ASSIGNMENTS);
@@ -302,6 +342,12 @@ class AppDataStore {
       class: classes.find(c => c.id === a.class_id),
       academic_year: academicYears.find(ay => ay.id === a.academic_year_id)
     }));
+  }
+
+  deleteAssignment(id: string): void {
+    let assignments = getStorage<ClassAdvisorAssignment[]>(STORAGE_KEYS.ASSIGNMENTS, INITIAL_ASSIGNMENTS);
+    assignments = assignments.filter(a => a.id !== id);
+    setStorage(STORAGE_KEYS.ASSIGNMENTS, assignments);
   }
 
   saveAssignment(data: {

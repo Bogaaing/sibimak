@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
-import { Header } from '../../../components/layout/Header';
-import { Card, CardContent } from '../../../components/ui/Card';
 import { store } from '../../../lib/store';
-import { UserCheck, GraduationCap, Layers, Calendar, BookOpen, MessageSquare, ArrowUpRight } from 'lucide-react';
+import { 
+  UserCheck, 
+  GraduationCap, 
+  Layers, 
+  CalendarDays, 
+  BookOpenCheck, 
+  MessagesSquare, 
+  ArrowUpRight, 
+  School,
+  GitBranch,
+  FileText
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Badge } from '../../../components/ui/Badge';
 
 export const AdminDashboard: React.FC = () => {
   const [stats] = useState(() => ({
@@ -18,182 +28,174 @@ export const AdminDashboard: React.FC = () => {
 
   const activeYear = store.getActiveAcademicYear();
   const assignments = store.getAssignments();
-  const recentClassSessions = store.getClassSessions().slice(0, 3);
-  const recentIndividual = store.getIndividualRequests().slice(0, 3);
+  const recentClassSessions = store.getClassSessions().slice(0, 4);
 
   return (
-    <div className="flex-1 pb-12">
-      <Header
-        title="Dashboard Administrator"
-        description="Ringkasan pengelolaan data akademik, plotting dosen PA, dan statistik bimbingan."
-      />
-
-      <div className="p-8 space-y-8 max-w-7xl mx-auto">
-        {/* KPI Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Dosen PA</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalDosen}</p>
-              <span className="text-xs text-blue-600 font-medium mt-1 inline-block">Terdaftar di sistem</span>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <UserCheck className="w-6 h-6" />
-            </div>
+    <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">
+      {/* 1. TOP STATS KPI CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Dosen PA</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">{stats.totalDosen}</p>
+            <span className="text-xs text-blue-600 font-semibold mt-1 inline-block">Terdaftar di sistem</span>
           </div>
-
-          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Mahasiswa</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalMahasiswa}</p>
-              <span className="text-xs text-emerald-600 font-medium mt-1 inline-block">Aktif terdaftar</span>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <GraduationCap className="w-6 h-6" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Data Kelas</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalKelas}</p>
-              <span className="text-xs text-purple-600 font-medium mt-1 inline-block">{stats.totalPlotting} kelas terplotting</span>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <Layers className="w-6 h-6" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sesi Bimbingan</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalBimbinganKelas + stats.totalBimbinganIndividu}</p>
-              <span className="text-xs text-amber-600 font-medium mt-1 inline-block">{stats.totalBimbinganKelas} Kelas • {stats.totalBimbinganIndividu} Personal</span>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <BookOpen className="w-6 h-6" />
-            </div>
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-2xs">
+            <UserCheck className="w-6 h-6 stroke-[1.8]" />
           </div>
         </div>
 
-        {/* Plotting PA Status & Active Academic Year info */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Active Academic Year Banner */}
-          <div className="lg:col-span-1 bg-gradient-to-br from-blue-700 to-indigo-800 rounded-2xl p-6 text-white shadow-lg flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-blue-200 text-xs font-medium uppercase tracking-wider mb-2">
-                <Calendar className="w-4 h-4" />
-                Periode Akademik Aktif
-              </div>
-              <h3 className="text-xl font-bold">{activeYear?.name || 'Tahun Akademik Aktif'}</h3>
-              <p className="text-xs text-blue-100 mt-2">
-                Kode: <span className="font-semibold text-white">{activeYear?.code}</span> • Semester: <span className="font-semibold text-white">{activeYear?.semester}</span>
-              </p>
-              <div className="mt-4 pt-4 border-t border-blue-500/40 text-xs text-blue-100">
-                Rentang: {activeYear?.start_date} s/d {activeYear?.end_date}
-              </div>
+        <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Mahasiswa</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">{stats.totalMahasiswa}</p>
+            <span className="text-xs text-emerald-600 font-semibold mt-1 inline-block">Aktif terdaftar</span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-2xs">
+            <GraduationCap className="w-6 h-6 stroke-[1.8]" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Data Kelas</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">{stats.totalKelas}</p>
+            <span className="text-xs text-purple-600 font-semibold mt-1 inline-block">{stats.totalPlotting} kelas terplotting</span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-2xs">
+            <School className="w-6 h-6 stroke-[1.8]" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Bimbingan</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">{stats.totalBimbinganKelas + stats.totalBimbinganIndividu}</p>
+            <span className="text-xs text-amber-600 font-semibold mt-1 inline-block">{stats.totalBimbinganKelas} Kelas • {stats.totalBimbinganIndividu} Personal</span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-2xs">
+            <BookOpenCheck className="w-6 h-6 stroke-[1.8]" />
+          </div>
+        </div>
+      </div>
+
+      {/* 2. MIDDLE SECTION: ACTIVE PERIOD & QUICK ACTIONS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Active Academic Year Card */}
+        <div className="lg:col-span-1 bg-white rounded-xl p-6 border border-slate-200/80 shadow-2xs flex flex-col justify-between space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <CalendarDays className="w-4 h-4 text-blue-600 stroke-[1.8]" />
+                <span>Periode Akademik Aktif</span>
+              </span>
+              <Badge variant="success" size="sm">
+                Aktif
+              </Badge>
             </div>
 
-            <div className="mt-6">
-              <Link
-                to="/admin/plotting"
-                className="w-full py-2.5 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-white/20"
-              >
-                <span>Kelola Plotting Dosen PA</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </Link>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">{activeYear?.name || 'Tahun Akademik 2026/2027 Ganjil'}</h3>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Kode: <span className="font-mono font-bold text-slate-800">{activeYear?.code || '2026/2027-1'}</span> • Semester: <span className="font-semibold text-slate-800">{activeYear?.semester || 'Ganjil'}</span>
+              </p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-600 font-medium">
+              Rentang: <span className="font-bold text-slate-800">{activeYear?.start_date || '2026-09-01'}</span> s/d <span className="font-bold text-slate-800">{activeYear?.end_date || '2027-01-31'}</span>
             </div>
           </div>
 
-          {/* Current Assignments Snapshot */}
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-slate-800">Plotting Dosen PA Terkini</h3>
-              <Link to="/admin/plotting" className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                Lihat Semua <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+          <div className="pt-2">
+            <Link
+              to="/admin/plotting"
+              className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-2xs"
+            >
+              <GitBranch className="w-4 h-4 stroke-[1.8]" />
+              <span>Kelola Plotting Dosen PA</span>
+            </Link>
+          </div>
+        </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider">
-                    <th className="pb-3 font-semibold">Kelas</th>
-                    <th className="pb-3 font-semibold">Dosen Pembimbing Akademik</th>
-                    <th className="pb-3 font-semibold">Nomor SK</th>
-                    <th className="pb-3 font-semibold">Status</th>
+        {/* Plotting Summary Table */}
+        <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-slate-200/80 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <School className="w-4 h-4 text-blue-600 stroke-[1.8]" />
+              <span>Daftar Plotting Kelas Perwalian</span>
+            </h3>
+            <Link to="/admin/plotting" className="text-xs text-blue-600 hover:underline font-bold flex items-center gap-1">
+              <span>Semua Plotting</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                <tr>
+                  <th className="px-3.5 py-2.5">Kelas</th>
+                  <th className="px-3.5 py-2.5">Dosen Pembimbing Akademik</th>
+                  <th className="px-3.5 py-2.5">Program Studi</th>
+                  <th className="px-3.5 py-2.5">No. SK</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {assignments.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-3.5 py-6 text-center text-slate-500">
+                      Belum ada plotting Dosen PA.
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {assignments.map((asg) => (
-                    <tr key={asg.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 font-bold text-slate-900">{asg.class?.name}</td>
-                      <td className="py-3 font-medium text-slate-700">
-                        {asg.lecturer?.title_prefix ? `${asg.lecturer.title_prefix} ` : ''}
-                        {asg.lecturer?.profile?.full_name}
-                        {asg.lecturer?.title_suffix ? `, ${asg.lecturer.title_suffix}` : ''}
-                      </td>
-                      <td className="py-3 text-slate-500 font-mono text-[11px]">{asg.sk_number || '-'}</td>
-                      <td className="py-3">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Aktif
+                ) : (
+                  assignments.slice(0, 4).map((a) => (
+                    <tr key={a.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-3.5 py-3 font-bold text-slate-900">
+                        <span className="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                          {a.class?.name}
                         </span>
                       </td>
+                      <td className="px-3.5 py-3 font-semibold text-slate-800">
+                        {a.lecturer?.profile?.full_name || 'Ahmad Asep Suhendi, M.Kom.'}
+                      </td>
+                      <td className="px-3.5 py-3 text-slate-600 font-medium">
+                        {a.class?.study_program}
+                      </td>
+                      <td className="px-3.5 py-3 font-mono text-slate-500 text-[11px]">
+                        {a.sk_number || '-'}
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
+      </div>
 
-        {/* Recent Guidance Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-blue-600" />
-                Bimbingan Kelas Terbaru
-              </h3>
-            </div>
-            <CardContent className="divide-y divide-slate-100">
-              {recentClassSessions.map(session => (
-                <div key={session.id} className="py-3 flex items-start justify-between">
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-800">{session.title}</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Kelas: {session.assignment?.class?.name} • Tanggal: {session.session_date}</p>
-                  </div>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                    {session.status}
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+      {/* 3. RECENT ACTIVITY LIST */}
+      <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-2xs space-y-4">
+        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+          <BookOpenCheck className="w-4 h-4 text-blue-600 stroke-[1.8]" />
+          <span>Sesi Bimbingan Kelas Terbaru</span>
+        </h3>
 
-          <Card>
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-indigo-600" />
-                Pengajuan Bimbingan Individu Terbaru
-              </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {recentClassSessions.map((cs) => (
+            <div key={cs.id} className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 transition-colors space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900">{cs.title}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  {cs.assignment?.class?.name ? `Kelas ${cs.assignment.class.name}` : 'Sesi Kelas'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 line-clamp-1">{cs.topic_description || 'Pengarahan akademik perwalian semester.'}</p>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium pt-1 border-t border-slate-200/60">
+                <span>Tanggal: {cs.session_date}</span>
+                <span>Lokasi: {cs.venue_or_link || 'Ruang Kelas'}</span>
+              </div>
             </div>
-            <CardContent className="divide-y divide-slate-100">
-              {recentIndividual.map(req => (
-                <div key={req.id} className="py-3 flex items-start justify-between">
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-800">{req.title}</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Mahasiswa: {req.student?.profile?.full_name} ({req.student?.nim})
-                    </p>
-                  </div>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                    {req.status}
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          ))}
         </div>
       </div>
     </div>
