@@ -75,14 +75,8 @@ export const BimbinganIndividuList: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 pb-12">
-      <Header
-        title="Bimbingan Individu (Konsultasi Personal)"
-        description="Kelola dan tanggapi permohonan bimbingan personal dari mahasiswa bimbingan Anda."
-      />
-
-      <div className="p-8 space-y-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* List of requests */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -263,7 +257,6 @@ export const BimbinganIndividuList: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
 
       {/* Modal Update Status & Action Plan */}
       <Modal

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import {
   LayoutDashboard,
@@ -21,6 +21,7 @@ import { store } from '../../lib/store';
 export const DosenLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -40,6 +41,9 @@ export const DosenLayout: React.FC = () => {
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return parts[0].slice(0, 2).toUpperCase();
   };
+
+  // Only show topbar welcome & headers on Dashboard
+  const isDashboard = location.pathname === '/dosen' || location.pathname === '/dosen/dashboard';
 
   return (
     <div className="min-h-screen flex bg-[#f8fafc] text-slate-900 font-sans">
@@ -254,50 +258,63 @@ export const DosenLayout: React.FC = () => {
 
       {/* 2. MAIN CONTENT WRAPPER */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-[260px]">
-        {/* Topbar */}
-        <header className="no-print bg-white border-b border-slate-200/90 h-[70px] px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
-          <div className="flex items-center gap-3.5 min-w-0">
+        {/* Topbar: Rendered on Dashboard, or minimal mobile hamburger on other pages */}
+        {isDashboard ? (
+          <header className="no-print bg-white border-b border-slate-200/90 h-[70px] px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="lg:hidden p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              >
+                <Menu className="w-5 h-5 stroke-[1.8]" />
+              </button>
+
+              <div>
+                <h2 className="text-[16px] sm:text-[17px] font-bold text-slate-900 leading-tight truncate">
+                  Selamat datang, {user?.full_name || 'Ahmad Asep Suhendi'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5 leading-tight truncate hidden sm:block">
+                  Kelola bimbingan akademik kelas dan konsultasi individual mahasiswa Anda.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-xs text-slate-700 font-medium shadow-2xs">
+                <CalendarDays className="w-3.5 h-3.5 text-slate-500 stroke-[1.8]" />
+                <span className="font-semibold">{activeYear?.name || 'Tahun Akademik 2026/2027 Ganjil'}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 stroke-[1.8]" />
+              </div>
+
+              <button
+                title="Notifikasi"
+                className="relative p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-2xs"
+              >
+                <Bell className="w-4 h-4 stroke-[1.8]" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9.5px] font-bold flex items-center justify-center border-2 border-white shadow-2xs">
+                  3
+                </span>
+              </button>
+
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-xs font-bold text-slate-800 shadow-2xs">
+                <UserRound className="w-3.5 h-3.5 text-slate-600 stroke-[1.8]" />
+                <span className="uppercase text-[11px] tracking-wide">DOSEN PA</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 stroke-[1.8]" />
+              </div>
+            </div>
+          </header>
+        ) : (
+          /* On Subpages, only render mobile drawer toggle when on mobile screen */
+          <div className="lg:hidden no-print bg-white border-b border-slate-200/90 h-[50px] px-4 flex items-center sticky top-0 z-20">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 text-xs font-bold"
             >
               <Menu className="w-5 h-5 stroke-[1.8]" />
+              <span>Menu Navigasi</span>
             </button>
-
-            <div>
-              <h2 className="text-[16px] sm:text-[17px] font-bold text-slate-900 leading-tight truncate">
-                Selamat datang, {user?.full_name || 'Ahmad Asep Suhendi'}
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5 leading-tight truncate hidden sm:block">
-                Kelola bimbingan akademik kelas dan konsultasi individual mahasiswa Anda.
-              </p>
-            </div>
           </div>
-
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-xs text-slate-700 font-medium shadow-2xs">
-              <CalendarDays className="w-3.5 h-3.5 text-slate-500 stroke-[1.8]" />
-              <span className="font-semibold">{activeYear?.name || 'Tahun Akademik 2026/2027 Ganjil'}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 stroke-[1.8]" />
-            </div>
-
-            <button
-              title="Notifikasi"
-              className="relative p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-2xs"
-            >
-              <Bell className="w-4 h-4 stroke-[1.8]" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9.5px] font-bold flex items-center justify-center border-2 border-white shadow-2xs">
-                3
-              </span>
-            </button>
-
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-xs font-bold text-slate-800 shadow-2xs">
-              <UserRound className="w-3.5 h-3.5 text-slate-600 stroke-[1.8]" />
-              <span className="uppercase text-[11px] tracking-wide">DOSEN PA</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 stroke-[1.8]" />
-            </div>
-          </div>
-        </header>
+        )}
 
         {/* Page Content */}
         <main className="flex-1">

@@ -150,12 +150,7 @@ export const BimbinganKelasList: React.FC = () => {
   const validCount = participants.filter((p) => p.attendance_status === 'HADIR' && p.validation_status === 'VALID').length;
 
   return (
-    <div className="flex-1 pb-12 bg-slate-50 min-h-screen">
-      <Header
-        title="Bimbingan Kelas"
-        description="Kelola pengarahan kelas perwalian, rekapitulasi kehadiran, dan validasi paraf Dosen PA"
-      />
-
+    <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">
       {/* Floating Success Toast */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-medium px-4 py-3 rounded-md shadow-lg border border-slate-700 flex items-center gap-2">
@@ -164,7 +159,7 @@ export const BimbinganKelasList: React.FC = () => {
         </div>
       )}
 
-      <div className="p-6 space-y-5 max-w-7xl mx-auto">
+      <div className="space-y-5">
         {/* Header Bar */}
         <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
