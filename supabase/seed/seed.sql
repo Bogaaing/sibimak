@@ -1,6 +1,6 @@
 -- ============================================================================
--- Si-BimAk (Sistem Informasi Bimbingan Akademik)
--- Seed Data: Development & Testing Initial Fixtures
+-- SiBiMa (Sistem Informasi Bimbingan Akademik)
+-- Seed Data for Initial Development & Evaluation
 -- ============================================================================
 
 -- 1. Academic Year

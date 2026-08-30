@@ -18,7 +18,7 @@ export const DemoSwitcher: React.FC = () => {
     <div className="no-print bg-slate-900 text-white text-xs py-2 px-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-inner">
       <div className="flex items-center gap-2">
         <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span className="font-semibold tracking-wide text-slate-300 uppercase text-[11px]">Si-BimAk Interactive Switcher:</span>
+        <span className="font-semibold tracking-wide text-slate-300 uppercase text-[11px]">SiBiMa Interactive Switcher:</span>
         <span className="text-slate-400">
           Login aktif: <strong className="text-white font-medium">{user?.full_name} ({user?.role?.toUpperCase()})</strong>
         </span>

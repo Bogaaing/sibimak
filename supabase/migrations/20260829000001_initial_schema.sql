@@ -1,5 +1,5 @@
 -- ============================================================================
--- Si-BimAk (Sistem Informasi Bimbingan Akademik)
+-- SiBiMa (Sistem Informasi Bimbingan Akademik)
 -- Migration 01: Initial Schema & Relational Structure
 -- ============================================================================
 

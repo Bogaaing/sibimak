@@ -1,6 +1,6 @@
 -- ============================================================================
--- Si-BimAk (Sistem Informasi Bimbingan Akademik)
--- Migration 02: Row Level Security (RLS) & Helper Security Functions
+-- SiBiMa (Sistem Informasi Bimbingan Akademik)
+-- Migration 02: Row Level Security (RLS) & Role-Based Access Control Policies
 -- ============================================================================
 
 -- Enable RLS on all tables

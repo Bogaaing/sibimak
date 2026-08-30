@@ -62,12 +62,12 @@ export const Login: React.FC = () => {
         <div className="text-center">
           <img
             src="/assets/app-logo.png"
-            alt="Si-BimAk"
+            alt="SiBiMa"
             className="w-12 h-12 lg:w-[48px] lg:h-[48px] rounded-xl mx-auto object-contain shadow-2xs mb-2.5"
           />
           <div>
             <h1 className="text-[24px] sm:text-[26px] font-bold text-[#0F172A] tracking-tight leading-[1.2]">
-              Si-BimAk
+              SiBiMa
             </h1>
             <p className="text-[13px] text-[#475569] font-medium leading-normal mt-1 mb-5">
               Sistem Informasi Bimbingan Akademik
@@ -207,7 +207,7 @@ export const Login: React.FC = () => {
           <div className="relative flex items-center py-1">
             <div className="flex-grow border-t border-[#E2E8F0]"></div>
             <span className="flex-shrink mx-2.5 text-[11px] text-[#94A3B8] font-medium">
-              Sistem Informasi Bimbingan Akademik Si-BimAk
+              Sistem Informasi Bimbingan Akademik SiBiMa
             </span>
             <div className="flex-grow border-t border-[#E2E8F0]"></div>
           </div>

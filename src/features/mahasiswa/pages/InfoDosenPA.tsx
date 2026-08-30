@@ -163,7 +163,7 @@ export const InfoDosenPA: React.FC = () => {
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold transition-colors select-none"
         >
           <LogOut className="w-4 h-4 stroke-[1.8]" />
-          <span>Keluar dari Akun Si-BimAk</span>
+          <span>Keluar dari Akun SiBiMa</span>
         </button>
       </div>
 
@@ -173,7 +173,7 @@ export const InfoDosenPA: React.FC = () => {
         onClose={() => setIsLogoutDialogOpen(false)}
         onConfirm={handleLogoutConfirm}
         title="Konfirmasi Keluar Akun"
-        message="Apakah Anda yakin ingin keluar dari sesi Si-BimAk pada perangkat ini?"
+        message="Apakah Anda yakin ingin keluar dari sesi SiBiMa pada perangkat ini?"
         confirmLabel="Ya, Keluar"
         cancelLabel="Batal"
         isDanger={true}

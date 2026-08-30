@@ -338,7 +338,7 @@ export const Sidebar: React.FC = () => {
         </div>
         <div className="min-w-0">
           <h1 className="text-[15px] font-bold text-white tracking-tight leading-tight truncate">
-            Si-BimAk
+            SiBiMa
           </h1>
           <p className="text-[10.5px] text-slate-400 font-medium tracking-wide leading-tight truncate">
             Bimbingan Akademik

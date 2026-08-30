@@ -1,6 +1,6 @@
 {
-  "name": "Si-BimAk - Sistem Informasi Bimbingan Akademik",
-  "short_name": "Si-BimAk",
+  "name": "SiBiMa — Bimbingan Akademik",
+  "short_name": "SiBiMa",
   "description": "Sistem Informasi Bimbingan Akademik Perguruan Tinggi",
   "start_url": "/",
   "display": "standalone",

@@ -21,12 +21,12 @@ export const MahasiswaLayout: React.FC = () => {
         <div className="flex items-center gap-2.5 min-w-0">
           <img
             src="/assets/app-logo.png"
-            alt="Si-BimAk"
+            alt="SiBiMa"
             className="w-7 h-7 rounded-lg object-contain flex-shrink-0 shadow-xs"
           />
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-tight truncate">
-              Si-BimAk
+              SiBiMa
             </h1>
           </div>
         </div>

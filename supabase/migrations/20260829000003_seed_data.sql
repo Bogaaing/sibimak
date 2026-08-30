@@ -1,6 +1,6 @@
 -- ============================================================================
--- Si-BimAk (Sistem Informasi Bimbingan Akademik)
--- Migration 03: Seed Sample Data
+-- SiBiMa (Sistem Informasi Bimbingan Akademik)
+-- Migration 03: Seed Data for Initial Development & Evaluation
 -- ============================================================================
 
 -- 1. Academic Years

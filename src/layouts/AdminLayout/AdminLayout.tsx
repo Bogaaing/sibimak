@@ -46,12 +46,12 @@ export const AdminLayout: React.FC = () => {
         <div className="h-[70px] px-5 flex items-center gap-3 border-b border-slate-100">
           <img
             src="/assets/app-logo.png"
-            alt="Si-BimAk"
+            alt="SiBiMa"
             className="w-9 h-9 rounded-xl object-contain flex-shrink-0 shadow-2xs"
           />
           <div className="min-w-0">
             <h1 className="text-[16px] font-extrabold text-slate-900 tracking-tight leading-tight truncate">
-              Si-BimAk
+              SiBiMa
             </h1>
             <p className="text-[11px] text-slate-500 font-medium leading-tight truncate">
               Administrator Master
