@@ -8,8 +8,8 @@ interface AuthContextType {
   lecturerProfile?: Lecturer;
   studentProfile?: Student;
   isLoading: boolean;
-  loginWithEmail: (email: string, password?: string) => Promise<void>;
-  loginWithNIM: (nim: string, password?: string) => Promise<void>;
+  loginWithEmail: (email: string, password?: string) => Promise<Profile | null>;
+  loginWithNIM: (nim: string, password?: string) => Promise<Profile | null>;
   login: (identifier: string, role?: 'admin' | 'dosen' | 'mahasiswa') => Promise<void>;
   logout: () => Promise<void>;
   switchDemoRole: (role: UserRole, specificId?: string) => void;
@@ -43,25 +43,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const loginWithEmail = async (email: string, password?: string) => {
+  const loginWithEmail = async (email: string, password?: string): Promise<Profile | null> => {
     setIsLoading(true);
     try {
       const sessionData = await authService.loginWithEmail(email, password);
       setUser(sessionData.user);
       setLecturerProfile(sessionData.lecturerProfile);
       setStudentProfile(sessionData.studentProfile);
+      return sessionData.user;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loginWithNIM = async (nim: string, password?: string) => {
+  const loginWithNIM = async (nim: string, password?: string): Promise<Profile | null> => {
     setIsLoading(true);
     try {
       const sessionData = await authService.loginWithNIM(nim, password);
       setUser(sessionData.user);
       setLecturerProfile(sessionData.lecturerProfile);
       setStudentProfile(sessionData.studentProfile);
+      return sessionData.user;
     } finally {
       setIsLoading(false);
     }

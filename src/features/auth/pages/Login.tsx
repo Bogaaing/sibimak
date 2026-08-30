@@ -36,8 +36,12 @@ export const Login: React.FC = () => {
         await loginWithNIM(identifier, password);
         navigate('/mahasiswa/dashboard');
       } else {
-        await loginWithEmail(identifier, password);
-        navigate('/dosen/dashboard');
+        const loggedInUser = await loginWithEmail(identifier, password);
+        if (loggedInUser?.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/dosen/dashboard');
+        }
       }
     } catch {
       setError(

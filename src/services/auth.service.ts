@@ -102,7 +102,9 @@ export const authService = {
     // Fallback store login
     const cleanEmail = email.toLowerCase().trim();
     let matchedProfile = store.getProfiles().find(p => p.email.toLowerCase() === cleanEmail);
-    if (!matchedProfile && (cleanEmail.includes('ahmad') || cleanEmail.includes('asep') || cleanEmail.includes('02975'))) {
+    if (!matchedProfile && (cleanEmail === 'admin' || cleanEmail.includes('admin'))) {
+      matchedProfile = store.getProfileById('usr-admin-1');
+    } else if (!matchedProfile && (cleanEmail.includes('ahmad') || cleanEmail.includes('asep') || cleanEmail.includes('02975'))) {
       matchedProfile = store.getProfileById('usr-dosen-1');
     }
 
