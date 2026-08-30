@@ -22,6 +22,7 @@ import { KelasBimbinganList } from '../features/dosen/pages/KelasBimbinganList';
 import { MahasiswaBimbinganList } from '../features/dosen/pages/MahasiswaBimbinganList';
 import { BimbinganKelasList } from '../features/dosen/pages/BimbinganKelasList';
 import { BimbinganIndividuList } from '../features/dosen/pages/BimbinganIndividuList';
+import { RiwayatBimbingan } from '../features/dosen/pages/RiwayatBimbingan';
 
 // Mahasiswa Pages
 import { MahasiswaDashboard } from '../features/mahasiswa/pages/MahasiswaDashboard';
@@ -66,7 +67,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="mahasiswa" element={<MahasiswaBimbinganList />} />
           <Route path="bimbingan-kelas" element={<BimbinganKelasList />} />
           <Route path="bimbingan-individu" element={<BimbinganIndividuList />} />
-          <Route path="riwayat" element={<BimbinganKelasList />} />
+          <Route path="riwayat" element={<RiwayatBimbingan />} />
           <Route path="laporan" element={<FormulirBimbinganPrint />} />
         </Route>
       </Route>
