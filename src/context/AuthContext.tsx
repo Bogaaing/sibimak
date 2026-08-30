@@ -1,16 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Profile, Lecturer, Student } from '../types/database.types';
-import { store } from '../lib/store';
-import { supabase, isSupabaseReady } from '../lib/supabase';
+import { Profile, Lecturer, Student, UserRole } from '../types/database.types';
+import { authService } from '../services/auth.service';
+import { isSupabaseReady } from '../lib/supabase';
 
 interface AuthContextType {
   user: Profile | null;
   lecturerProfile?: Lecturer;
   studentProfile?: Student;
   isLoading: boolean;
-  login: (email: string, role?: 'admin' | 'dosen' | 'mahasiswa') => Promise<void>;
+  loginWithEmail: (email: string, password?: string) => Promise<void>;
+  loginWithNIM: (nim: string, password?: string) => Promise<void>;
+  login: (identifier: string, role?: 'admin' | 'dosen' | 'mahasiswa') => Promise<void>;
   logout: () => Promise<void>;
-  switchDemoRole: (role: 'admin' | 'dosen' | 'mahasiswa', specificId?: string) => void;
+  switchDemoRole: (role: UserRole, specificId?: string) => void;
   isDemoMode: boolean;
 }
 
@@ -18,46 +20,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<Profile | null>(null);
+  const [lecturerProfile, setLecturerProfile] = useState<Lecturer | undefined>(undefined);
+  const [studentProfile, setStudentProfile] = useState<Student | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(!isSupabaseReady);
-
-  const loadProfile = (userId: string) => {
-    const profile = store.getProfileById(userId);
-    if (profile) {
-      setUser(profile);
-    } else {
-      // Default to admin if not found
-      const defaultAdmin = store.getProfiles().find(p => p.role === 'admin') || null;
-      setUser(defaultAdmin);
-    }
-  };
+  const isDemoMode = !isSupabaseReady;
 
   useEffect(() => {
     const initAuth = async () => {
       setIsLoading(true);
       try {
-        if (isSupabaseReady) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user) {
-            const profile = store.getProfileById(session.user.id);
-            if (profile) {
-              setUser(profile);
-            }
-          }
-        }
-
-        // Check local storage current user fallback
-        const savedUserId = localStorage.getItem('sibimak_current_user_id');
-        if (savedUserId) {
-          loadProfile(savedUserId);
-        } else {
-          // Default start as Admin for easy testing
-          const defaultAdmin = store.getProfiles().find(p => p.role === 'admin');
-          if (defaultAdmin) {
-            setUser(defaultAdmin);
-            localStorage.setItem('sibimak_current_user_id', defaultAdmin.id);
-          }
-        }
+        const sessionData = await authService.getCurrentUserSession();
+        setUser(sessionData.user);
+        setLecturerProfile(sessionData.lecturerProfile);
+        setStudentProfile(sessionData.studentProfile);
       } catch (err) {
         console.error('Auth initialization error:', err);
       } finally {
@@ -68,50 +43,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, _role?: 'admin' | 'dosen' | 'mahasiswa') => {
+  const loginWithEmail = async (email: string, password?: string) => {
     setIsLoading(true);
     try {
-      const matchedProfile = store.getProfiles().find(p => p.email.toLowerCase() === email.toLowerCase());
-      if (matchedProfile) {
-        setUser(matchedProfile);
-        localStorage.setItem('sibimak_current_user_id', matchedProfile.id);
-      } else {
-        throw new Error('User dengan email tersebut tidak ditemukan.');
-      }
+      const sessionData = await authService.loginWithEmail(email, password);
+      setUser(sessionData.user);
+      setLecturerProfile(sessionData.lecturerProfile);
+      setStudentProfile(sessionData.studentProfile);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = async () => {
-    if (isSupabaseReady) {
-      await supabase.auth.signOut();
+  const loginWithNIM = async (nim: string, password?: string) => {
+    setIsLoading(true);
+    try {
+      const sessionData = await authService.loginWithNIM(nim, password);
+      setUser(sessionData.user);
+      setLecturerProfile(sessionData.lecturerProfile);
+      setStudentProfile(sessionData.studentProfile);
+    } finally {
+      setIsLoading(false);
     }
-    localStorage.removeItem('sibimak_current_user_id');
-    setUser(null);
   };
 
-  const switchDemoRole = (role: 'admin' | 'dosen' | 'mahasiswa', specificId?: string) => {
-    let target: Profile | undefined;
-    if (specificId) {
-      target = store.getProfileById(specificId);
+  const login = async (identifier: string, role?: 'admin' | 'dosen' | 'mahasiswa') => {
+    if (role === 'mahasiswa' || /^\d+$/.test(identifier)) {
+      await loginWithNIM(identifier);
     } else {
-      target = store.getProfiles().find(p => p.role === role);
-    }
-
-    if (target) {
-      setUser(target);
-      localStorage.setItem('sibimak_current_user_id', target.id);
+      await loginWithEmail(identifier);
     }
   };
 
-  const lecturerProfile = user?.role === 'dosen' 
-    ? store.getLecturers().find(l => l.id === user.id)
-    : undefined;
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      await authService.logout();
+      setUser(null);
+      setLecturerProfile(undefined);
+      setStudentProfile(undefined);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const studentProfile = user?.role === 'mahasiswa'
-    ? store.getStudents().find(s => s.id === user.id)
-    : undefined;
+  const switchDemoRole = (role: UserRole, specificId?: string) => {
+    const sessionData = authService.switchRole(role, specificId);
+    setUser(sessionData.user);
+    setLecturerProfile(sessionData.lecturerProfile);
+    setStudentProfile(sessionData.studentProfile);
+  };
 
   return (
     <AuthContext.Provider
@@ -120,6 +101,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lecturerProfile,
         studentProfile,
         isLoading,
+        loginWithEmail,
+        loginWithNIM,
         login,
         logout,
         switchDemoRole,

@@ -5,7 +5,7 @@ import { UserRound, LockKeyhole, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
 export const Login: React.FC = () => {
-  const { switchDemoRole } = useAuth();
+  const { loginWithNIM, loginWithEmail } = useAuth();
   const navigate = useNavigate();
 
   const [activeRole, setActiveRole] = useState<'mahasiswa' | 'dosen'>('mahasiswa');
@@ -33,11 +33,11 @@ export const Login: React.FC = () => {
 
     try {
       if (activeRole === 'mahasiswa') {
-        switchDemoRole('mahasiswa', 'usr-mhs-1');
-        navigate('/mahasiswa');
+        await loginWithNIM(identifier, password);
+        navigate('/mahasiswa/dashboard');
       } else {
-        switchDemoRole('dosen', 'usr-dosen-1');
-        navigate('/dosen');
+        await loginWithEmail(identifier, password);
+        navigate('/dosen/dashboard');
       }
     } catch {
       setError(
