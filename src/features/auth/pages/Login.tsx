@@ -51,58 +51,58 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center p-4 sm:p-6 font-sans text-[#0F172A] relative">
-      {/* Centered Authentication Card matching reference UI */}
-      <div className="w-full max-w-[450px] bg-white rounded-[24px] border border-[#E2E8F0] shadow-sm p-7 sm:p-9 space-y-6">
+    <div className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col justify-center items-center p-4 font-sans text-[#0F172A] relative">
+      {/* Centered Compact Authentication Card */}
+      <div className="w-full max-w-[400px] lg:max-w-[420px] bg-white rounded-[20px] border border-[#E2E8F0] shadow-sm p-6 sm:p-7">
         {/* Brand Header */}
-        <div className="text-center space-y-2">
+        <div className="text-center">
           <img
             src="/assets/app-logo.png"
             alt="Si-BimAk"
-            className="w-16 h-16 rounded-2xl mx-auto object-contain shadow-2xs"
+            className="w-12 h-12 lg:w-[48px] lg:h-[48px] rounded-xl mx-auto object-contain shadow-2xs mb-2.5"
           />
-          <div className="space-y-1">
-            <h1 className="text-2xl sm:text-[26px] font-extrabold text-[#0F172A] tracking-tight leading-tight">
+          <div>
+            <h1 className="text-[24px] sm:text-[26px] font-bold text-[#0F172A] tracking-tight leading-[1.2]">
               Si-BimAk
             </h1>
-            <p className="text-xs sm:text-[13px] text-[#475569] font-medium leading-normal">
+            <p className="text-[13px] text-[#475569] font-medium leading-normal mt-1 mb-5">
               Sistem Informasi Bimbingan Akademik
             </p>
           </div>
         </div>
 
-        {/* Role Switcher (Pill Style) */}
-        <div className="p-1 bg-[#F1F5F9] rounded-full border border-[#E2E8F0] flex items-center">
+        {/* Role Switcher (Compact 44px) */}
+        <div className="h-[44px] p-1 bg-[#F1F5F9] rounded-full border border-[#E2E8F0] flex items-center mb-[22px]">
           <button
             type="button"
             onClick={() => handleRoleChange('mahasiswa')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-xs sm:text-[13px] font-semibold transition-all select-none ${
+            className={`h-full flex-1 flex items-center justify-center gap-1.5 px-3 rounded-full text-[13px] font-semibold transition-all select-none ${
               activeRole === 'mahasiswa'
                 ? 'bg-[#2563EB] text-white shadow-2xs'
                 : 'text-[#0F172A] hover:text-[#2563EB]'
             }`}
           >
-            <UserRound className="w-4 h-4 stroke-[1.8]" />
+            <UserRound className="w-3.5 h-3.5 stroke-[1.8]" />
             <span>Mahasiswa</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleRoleChange('dosen')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-xs sm:text-[13px] font-semibold transition-all select-none ${
+            className={`h-full flex-1 flex items-center justify-center gap-1.5 px-3 rounded-full text-[13px] font-semibold transition-all select-none ${
               activeRole === 'dosen'
                 ? 'bg-[#2563EB] text-white shadow-2xs'
                 : 'text-[#0F172A] hover:text-[#2563EB]'
             }`}
           >
-            <UserRound className="w-4 h-4 stroke-[1.8]" />
+            <UserRound className="w-3.5 h-3.5 stroke-[1.8]" />
             <span>Dosen</span>
           </button>
         </div>
 
         {/* Friendly Error Alert */}
         {error && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium leading-relaxed">
+          <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium leading-relaxed mb-4">
             {error}
           </div>
         )}
@@ -110,12 +110,12 @@ export const Login: React.FC = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Identifier Input (NIM for Mahasiswa, Email for Dosen) */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-[#0F172A]">
+          <div>
+            <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">
               {activeRole === 'mahasiswa' ? 'NIM' : 'Email'}
             </label>
-            <div className="relative rounded-xl border border-[#E2E8F0] focus-within:border-[#2563EB] focus-within:ring-1 focus-within:ring-[#2563EB] bg-white transition-all shadow-2xs">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94A3B8]">
+            <div className="h-[44px] min-h-[44px] relative rounded-lg border border-[#E2E8F0] focus-within:border-[#2563EB] focus-within:ring-1 focus-within:ring-[#2563EB] bg-white transition-all shadow-2xs flex items-center">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8]">
                 <UserRound className="w-4 h-4 stroke-[1.8]" />
               </div>
               <input
@@ -127,19 +127,19 @@ export const Login: React.FC = () => {
                     ? 'Masukkan NIM Anda'
                     : 'Masukkan email Anda'
                 }
-                className="w-full pl-10 pr-3.5 py-2.5 min-h-[46px] text-xs sm:text-[13px] text-[#0F172A] font-medium placeholder:text-[#94A3B8] focus:outline-none bg-transparent rounded-xl"
+                className="w-full pl-9 pr-3.5 py-2 text-[13px] text-[#0F172A] font-medium placeholder:text-[#94A3B8] focus:outline-none bg-transparent rounded-lg"
                 required
               />
             </div>
           </div>
 
           {/* Password Input */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-[#0F172A]">
+          <div>
+            <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">
               Password
             </label>
-            <div className="relative rounded-xl border border-[#E2E8F0] focus-within:border-[#2563EB] focus-within:ring-1 focus-within:ring-[#2563EB] bg-white transition-all shadow-2xs">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94A3B8]">
+            <div className="h-[44px] min-h-[44px] relative rounded-lg border border-[#E2E8F0] focus-within:border-[#2563EB] focus-within:ring-1 focus-within:ring-[#2563EB] bg-white transition-all shadow-2xs flex items-center">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8]">
                 <LockKeyhole className="w-4 h-4 stroke-[1.8]" />
               </div>
               <input
@@ -147,13 +147,13 @@ export const Login: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Masukkan password Anda"
-                className="w-full pl-10 pr-10 py-2.5 min-h-[46px] text-xs sm:text-[13px] text-[#0F172A] font-medium placeholder:text-[#94A3B8] focus:outline-none bg-transparent rounded-xl"
+                className="w-full pl-9 pr-9 py-2 text-[13px] text-[#0F172A] font-medium placeholder:text-[#94A3B8] focus:outline-none bg-transparent rounded-lg"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#94A3B8] hover:text-[#475569] transition-colors"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#94A3B8] hover:text-[#475569] transition-colors"
                 title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
               >
                 {showPassword ? (
@@ -165,8 +165,8 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          {/* Remember Me Only (No Forgot Password) */}
-          <div className="pt-0.5">
+          {/* Remember Me Only */}
+          <div className="pt-0.5 pb-1">
             <Checkbox
               id="remember-me"
               checked={rememberMe}
@@ -175,11 +175,11 @@ export const Login: React.FC = () => {
             />
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button (44px) */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full min-h-[46px] flex items-center justify-center gap-2 py-3 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-sm rounded-xl shadow-2xs transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 disabled:opacity-50 select-none active:scale-[0.99]"
+            className="w-full h-[44px] min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-sm rounded-lg shadow-2xs transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 disabled:opacity-50 select-none active:scale-[0.99]"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -198,11 +198,11 @@ export const Login: React.FC = () => {
           </button>
         </form>
 
-        {/* Footer with subtle divider lines */}
-        <div className="pt-2">
-          <div className="relative flex items-center py-2">
+        {/* Compact Footer Divider */}
+        <div className="mt-[18px]">
+          <div className="relative flex items-center py-1">
             <div className="flex-grow border-t border-[#E2E8F0]"></div>
-            <span className="flex-shrink mx-3 text-[11px] text-[#94A3B8] font-medium">
+            <span className="flex-shrink mx-2.5 text-[11px] text-[#94A3B8] font-medium">
               Sistem Informasi Bimbingan Akademik Si-BimAk
             </span>
             <div className="flex-grow border-t border-[#E2E8F0]"></div>
