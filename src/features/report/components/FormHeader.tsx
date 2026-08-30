@@ -4,22 +4,22 @@ export const FormHeader: React.FC = () => {
   return (
     <div className="w-full">
       {/* 3-Column Header Layout: Left Logo | Center Text | Right Logo */}
-      <div className="flex items-center justify-between gap-4 pb-2">
-        {/* Left: Logo Yayasan Sasmita Jaya */}
+      <div className="flex items-center justify-between gap-3 pb-2">
+        {/* Left: Logo Yayasan Sasmita Jaya (Enhanced Size) */}
         <div 
           className="flex-shrink-0 flex items-center justify-center"
-          style={{ width: '115px', height: '115px', minWidth: '115px', minHeight: '115px' }}
+          style={{ width: '145px', height: '135px', minWidth: '145px', minHeight: '135px' }}
         >
           <img
             src="/assets/logoyayasan.png"
             alt="Logo Yayasan Sasmita Jaya"
-            className="w-full h-full object-contain"
-            style={{ width: '115px', height: '115px', maxWidth: '115px', maxHeight: '115px' }}
+            className="w-full h-full object-contain transform scale-110"
+            style={{ width: '145px', height: '135px', maxWidth: '145px', maxHeight: '135px' }}
           />
         </div>
 
         {/* Center: Institution Identity Typography */}
-        <div className="flex-1 text-center text-slate-950 leading-tight px-2">
+        <div className="flex-1 text-center text-slate-950 leading-tight px-1">
           <h3 className="text-[13px] font-bold tracking-wider uppercase">
             YAYASAN SASMITA JAYA GROUP
           </h3>
@@ -46,13 +46,13 @@ export const FormHeader: React.FC = () => {
         {/* Right: Logo Universitas Pamulang */}
         <div 
           className="flex-shrink-0 flex items-center justify-center"
-          style={{ width: '115px', height: '115px', minWidth: '115px', minHeight: '115px' }}
+          style={{ width: '125px', height: '125px', minWidth: '125px', minHeight: '125px' }}
         >
           <img
             src="/assets/logo-unpam.jpg"
             alt="Logo Universitas Pamulang"
             className="w-full h-full object-contain"
-            style={{ width: '115px', height: '115px', maxWidth: '115px', maxHeight: '115px' }}
+            style={{ width: '125px', height: '125px', maxWidth: '125px', maxHeight: '125px' }}
           />
         </div>
       </div>
