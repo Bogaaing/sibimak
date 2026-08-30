@@ -36,7 +36,7 @@ export const DosenLayout: React.FC = () => {
   };
 
   const getInitials = (name?: string) => {
-    if (!name) return 'DA';
+    if (!name) return 'AA';
     const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return parts[0].slice(0, 2).toUpperCase();
@@ -47,24 +47,24 @@ export const DosenLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-[#f8fafc] text-slate-900 font-sans">
-      {/* 1. DESKTOP / TABLET SIDEBAR (Dark Navy 260px) */}
+      {/* 1. LIGHT PROFESSIONAL SAAS SIDEBAR (260px) */}
       <aside
-        className={`no-print fixed inset-y-0 left-0 z-40 w-[260px] bg-[#0c1322] text-slate-300 flex flex-col border-r border-[#1a2337] transition-transform duration-200 lg:translate-x-0 ${
+        className={`no-print fixed inset-y-0 left-0 z-40 w-[260px] bg-white text-slate-700 flex flex-col border-r border-slate-200/90 shadow-2xs transition-transform duration-200 lg:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Brand Area */}
-        <div className="h-[64px] px-5 flex items-center gap-3 border-b border-[#1a2337]">
+        {/* Brand Header */}
+        <div className="h-[70px] px-5 flex items-center gap-3 border-b border-slate-100">
           <img
             src="/assets/app-logo.png"
             alt="Si-BimAk"
-            className="w-8 h-8 rounded-lg object-contain flex-shrink-0 shadow-xs"
+            className="w-9 h-9 rounded-xl object-contain flex-shrink-0 shadow-2xs"
           />
           <div className="min-w-0">
-            <h1 className="text-[15px] font-bold text-white tracking-tight leading-tight truncate">
+            <h1 className="text-[16px] font-extrabold text-slate-900 tracking-tight leading-tight truncate">
               Si-BimAk
             </h1>
-            <p className="text-[10.5px] text-slate-400 font-medium tracking-wide leading-tight truncate">
+            <p className="text-[11px] text-slate-500 font-medium leading-tight truncate">
               Bimbingan Akademik
             </p>
           </div>
@@ -74,7 +74,7 @@ export const DosenLayout: React.FC = () => {
         <div className="flex-1 py-4 px-3 overflow-y-auto space-y-4">
           {/* Section 1: UTAMA */}
           <div>
-            <div className="px-3 mb-1.5 text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+            <div className="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Utama
             </div>
             <NavLink
@@ -82,21 +82,25 @@ export const DosenLayout: React.FC = () => {
               end
               onClick={() => setIsMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                   isActive
-                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                    ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                 }`
               }
             >
-              <LayoutDashboard className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-              <span>Dashboard</span>
+              {({ isActive }) => (
+                <>
+                  <LayoutDashboard className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <span>Dashboard</span>
+                </>
+              )}
             </NavLink>
           </div>
 
           {/* Section 2: BIMBINGAN KELAS */}
           <div>
-            <div className="px-3 mb-1.5 text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+            <div className="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Bimbingan Kelas
             </div>
             <div className="space-y-1">
@@ -104,52 +108,64 @@ export const DosenLayout: React.FC = () => {
                 to="/dosen/kelas"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <School className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Kelas Bimbingan</span>
+                {({ isActive }) => (
+                  <>
+                    <School className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Kelas Bimbingan</span>
+                  </>
+                )}
               </NavLink>
 
               <NavLink
                 to="/dosen/mahasiswa"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <UsersRound className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Mahasiswa Bimbingan</span>
+                {({ isActive }) => (
+                  <>
+                    <UsersRound className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Mahasiswa Bimbingan</span>
+                  </>
+                )}
               </NavLink>
 
               <NavLink
                 to="/dosen/bimbingan-kelas"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <BookOpenCheck className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Bimbingan Kelas</span>
+                {({ isActive }) => (
+                  <>
+                    <BookOpenCheck className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Bimbingan Kelas</span>
+                  </>
+                )}
               </NavLink>
             </div>
           </div>
 
           {/* Section 3: BIMBINGAN INDIVIDU */}
           <div>
-            <div className="px-3 mb-1.5 text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+            <div className="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Bimbingan Individu
             </div>
             <div className="space-y-1">
@@ -157,21 +173,29 @@ export const DosenLayout: React.FC = () => {
                 to="/dosen/bimbingan-individu"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <MessagesSquare className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                  <span className="truncate">Bimbingan Individu</span>
-                </div>
-                {pendingConsultations > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 flex-shrink-0">
-                    {pendingConsultations}
-                  </span>
+                {({ isActive }) => (
+                  <>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <MessagesSquare className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                      <span className="truncate">Bimbingan Individu</span>
+                    </div>
+                    {pendingConsultations > 0 && (
+                      <span
+                        className={`w-5 h-5 rounded-full text-[10.5px] font-bold flex items-center justify-center flex-shrink-0 ${
+                          isActive ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-2xs'
+                        }`}
+                      >
+                        {pendingConsultations}
+                      </span>
+                    )}
+                  </>
                 )}
               </NavLink>
             </div>
@@ -179,7 +203,7 @@ export const DosenLayout: React.FC = () => {
 
           {/* Section 4: LAPORAN */}
           <div>
-            <div className="px-3 mb-1.5 text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+            <div className="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Laporan
             </div>
             <div className="space-y-1">
@@ -187,50 +211,58 @@ export const DosenLayout: React.FC = () => {
                 to="/dosen/riwayat"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <History className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Riwayat Bimbingan</span>
+                {({ isActive }) => (
+                  <>
+                    <History className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Riwayat Bimbingan</span>
+                  </>
+                )}
               </NavLink>
 
               <NavLink
                 to="/report/formulir?studentId=usr-mhs-1"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <FileText className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Laporan & Form</span>
+                {({ isActive }) => (
+                  <>
+                    <FileText className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Laporan & Form</span>
+                  </>
+                )}
               </NavLink>
             </div>
           </div>
         </div>
 
         {/* Profile Card & Logout Area */}
-        <div className="p-3 border-t border-[#1a2337] bg-[#090e1a] relative">
+        <div className="p-3 border-t border-slate-100 bg-white">
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="p-2 rounded-lg bg-[#111a2e] border border-[#1e2a47] hover:border-slate-600 transition-all cursor-pointer flex items-center justify-between gap-2"
+            className="p-2.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 shadow-2xs transition-all cursor-pointer flex items-center justify-between gap-2.5"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 font-bold text-xs flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
                 {getInitials(user?.full_name)}
               </div>
               <div className="min-w-0">
-                <p className="text-[12.5px] font-bold text-white truncate leading-tight">
+                <p className="text-[12.5px] font-bold text-slate-900 truncate leading-tight">
                   {user?.full_name || 'Ahmad Asep Suhendi'}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate mt-0.5 leading-tight">
+                <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5 leading-tight">
                   Dosen PA • NIDN 0411099202
                 </p>
               </div>
@@ -240,7 +272,7 @@ export const DosenLayout: React.FC = () => {
 
           <button
             onClick={handleLogout}
-            className="mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 transition-colors"
+            className="mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5 stroke-[1.8]" />
             <span>Keluar</span>

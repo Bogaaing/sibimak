@@ -27,26 +27,33 @@ export const AdminLayout: React.FC = () => {
     navigate('/login');
   };
 
+  const getInitials = (name?: string) => {
+    if (!name) return 'AD';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return parts[0].slice(0, 2).toUpperCase();
+  };
+
   return (
     <div className="min-h-screen flex bg-[#f8fafc] text-slate-900 font-sans">
-      {/* 1. DESKTOP SIDEBAR (Dark Navy 260px) */}
+      {/* 1. LIGHT PROFESSIONAL SAAS SIDEBAR (260px) */}
       <aside
-        className={`no-print fixed inset-y-0 left-0 z-40 w-[260px] bg-[#0c1322] text-slate-300 flex flex-col border-r border-[#1a2337] transition-transform duration-200 lg:translate-x-0 ${
+        className={`no-print fixed inset-y-0 left-0 z-40 w-[260px] bg-white text-slate-700 flex flex-col border-r border-slate-200/90 shadow-2xs transition-transform duration-200 lg:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Brand Area */}
-        <div className="h-[64px] px-5 flex items-center gap-3 border-b border-[#1a2337]">
+        <div className="h-[70px] px-5 flex items-center gap-3 border-b border-slate-100">
           <img
             src="/assets/app-logo.png"
             alt="Si-BimAk"
-            className="w-8 h-8 rounded-lg object-contain flex-shrink-0 shadow-xs"
+            className="w-9 h-9 rounded-xl object-contain flex-shrink-0 shadow-2xs"
           />
           <div className="min-w-0">
-            <h1 className="text-[15px] font-bold text-white tracking-tight leading-tight truncate">
+            <h1 className="text-[16px] font-extrabold text-slate-900 tracking-tight leading-tight truncate">
               Si-BimAk
             </h1>
-            <p className="text-[10.5px] text-slate-400 font-medium tracking-wide leading-tight truncate">
+            <p className="text-[11px] text-slate-500 font-medium leading-tight truncate">
               Administrator Master
             </p>
           </div>
@@ -55,7 +62,7 @@ export const AdminLayout: React.FC = () => {
         {/* Navigation List */}
         <div className="flex-1 py-4 px-3 overflow-y-auto space-y-4">
           <div>
-            <div className="px-3 mb-1.5 text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+            <div className="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Utama
             </div>
             <NavLink
@@ -63,20 +70,24 @@ export const AdminLayout: React.FC = () => {
               end
               onClick={() => setIsMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                   isActive
-                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                    ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                 }`
               }
             >
-              <LayoutDashboard className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-              <span>Dashboard</span>
+              {({ isActive }) => (
+                <>
+                  <LayoutDashboard className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <span>Dashboard</span>
+                </>
+              )}
             </NavLink>
           </div>
 
           <div>
-            <div className="px-3 mb-1.5 text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+            <div className="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Master Akademik
             </div>
             <div className="space-y-1">
@@ -84,101 +95,122 @@ export const AdminLayout: React.FC = () => {
                 to="/admin/dosen"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <UserRoundCog className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Data Dosen PA</span>
+                {({ isActive }) => (
+                  <>
+                    <UserRoundCog className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Data Dosen PA</span>
+                  </>
+                )}
               </NavLink>
 
               <NavLink
                 to="/admin/mahasiswa"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <GraduationCap className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Data Mahasiswa</span>
+                {({ isActive }) => (
+                  <>
+                    <GraduationCap className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Data Mahasiswa</span>
+                  </>
+                )}
               </NavLink>
 
               <NavLink
                 to="/admin/kelas"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <School className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Data Kelas</span>
+                {({ isActive }) => (
+                  <>
+                    <School className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Data Kelas</span>
+                  </>
+                )}
               </NavLink>
 
               <NavLink
                 to="/admin/tahun-akademik"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <CalendarDays className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Tahun Akademik</span>
+                {({ isActive }) => (
+                  <>
+                    <CalendarDays className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Tahun Akademik</span>
+                  </>
+                )}
               </NavLink>
 
               <NavLink
                 to="/admin/plotting"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
                     isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 font-medium'
                   }`
                 }
               >
-                <GitBranch className="w-[18px] h-[18px] stroke-[1.8] flex-shrink-0" />
-                <span>Plotting Dosen PA</span>
+                {({ isActive }) => (
+                  <>
+                    <GitBranch className={`w-[18px] h-[18px] stroke-[1.8] flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>Plotting Dosen PA</span>
+                  </>
+                )}
               </NavLink>
             </div>
           </div>
         </div>
 
         {/* Profile Card & Logout */}
-        <div className="p-3 border-t border-[#1a2337] bg-[#090e1a]">
-          <div className="p-2 rounded-lg bg-[#111a2e] border border-[#1e2a47] flex items-center justify-between gap-2">
+        <div className="p-3 border-t border-slate-100 bg-white">
+          <div className="p-2.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 font-bold text-xs flex-shrink-0">
-                ADM
+              <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
+                {getInitials(user?.full_name)}
               </div>
               <div className="min-w-0">
-                <p className="text-[12.5px] font-bold text-white truncate leading-tight">
+                <p className="text-[12.5px] font-bold text-slate-900 truncate leading-tight">
                   {user?.full_name || 'Administrator'}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate mt-0.5 leading-tight">
-                  Superadmin Akademik
+                <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5 leading-tight">
+                  Super Administrator
                 </p>
               </div>
             </div>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
           </div>
 
           <button
             onClick={handleLogout}
-            className="mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 transition-colors"
+            className="mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5 stroke-[1.8]" />
             <span>Keluar</span>
@@ -186,7 +218,7 @@ export const AdminLayout: React.FC = () => {
         </div>
       </aside>
 
-      {/* Mobile Drawer Backdrop */}
+      {/* Backdrop for Mobile Sidebar Drawer */}
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 bg-slate-900/50 z-30 lg:hidden"
@@ -196,7 +228,7 @@ export const AdminLayout: React.FC = () => {
 
       {/* 2. MAIN CONTENT WRAPPER */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-[260px]">
-        {/* Topbar */}
+        {/* Topbar Header */}
         <header className="no-print bg-white border-b border-slate-200/90 h-[70px] px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
           <div className="flex items-center gap-3.5 min-w-0">
             <button
@@ -208,10 +240,10 @@ export const AdminLayout: React.FC = () => {
 
             <div>
               <h2 className="text-[16px] sm:text-[17px] font-bold text-slate-900 leading-tight truncate">
-                Panel Administrator Akademik
+                Panel Kontrol Administrator
               </h2>
               <p className="text-xs text-slate-500 mt-0.5 leading-tight truncate hidden sm:block">
-                Pengelolaan data master, tahun akademik, dan plotting Dosen Pembimbing Akademik.
+                Manajemen data master bimbingan akademik, dosen PA, mahasiswa, dan plotting kelas.
               </p>
             </div>
           </div>
@@ -235,7 +267,7 @@ export const AdminLayout: React.FC = () => {
 
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-xs font-bold text-slate-800 shadow-2xs">
               <UserRound className="w-3.5 h-3.5 text-slate-600 stroke-[1.8]" />
-              <span className="uppercase text-[11px] tracking-wide">ADMIN</span>
+              <span className="uppercase text-[11px] tracking-wide">ADMINISTRATOR</span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 stroke-[1.8]" />
             </div>
           </div>
