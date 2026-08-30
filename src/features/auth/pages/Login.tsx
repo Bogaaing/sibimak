@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
-import { UserRound, LockKeyhole, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { 
+  UserRound, 
+  LockKeyhole, 
+  Eye, 
+  EyeOff, 
+  ArrowRight,
+  School
+} from 'lucide-react';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
 export const Login: React.FC = () => {
@@ -55,163 +62,242 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col justify-center items-center p-4 font-sans text-[#0F172A] relative">
-      {/* Centered Compact Authentication Card */}
-      <div className="w-full max-w-[400px] lg:max-w-[420px] bg-white rounded-[20px] border border-[#E2E8F0] shadow-sm p-6 sm:p-7">
-        {/* Brand Header */}
-        <div className="text-center">
-          <img
-            src="/assets/app-logo.png"
-            alt="SiBiMa"
-            className="w-12 h-12 lg:w-[48px] lg:h-[48px] rounded-xl mx-auto object-contain shadow-2xs mb-2.5"
-          />
-          <div>
-            <h1 className="text-[24px] sm:text-[26px] font-bold text-[#0F172A] tracking-tight leading-[1.2]">
-              SiBiMa
-            </h1>
-            <p className="text-[13px] text-[#475569] font-medium leading-normal mt-1 mb-5">
-              Sistem Informasi Bimbingan Akademik
+    <div className="min-h-[100dvh] w-full relative overflow-hidden bg-slate-900 font-sans text-slate-900 flex flex-col justify-between">
+      {/* 1. CAMPUS BACKGROUND IMAGE WITH SUBTLE LIGHT OVERLAY */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
+        style={{ backgroundImage: `url('/assets/unpam-campus.jpg')` }}
+      />
+      {/* Light Overlay Gradient ensuring readability & contrast */}
+      <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/85 to-white/60 backdrop-blur-[1px] z-0" />
+
+      {/* 2. BLUE DECORATIVE SHAPE & DOT MATRIX (BOTTOM-RIGHT) */}
+      <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] sm:w-[650px] sm:h-[650px] pointer-events-none z-0 hidden md:block overflow-hidden">
+        {/* Outer Soft Wave */}
+        <div className="absolute inset-0 rounded-full bg-blue-500/20 transform rotate-12 scale-110" />
+        {/* Main Academic Blue Arc */}
+        <div className="absolute inset-8 rounded-full bg-[#2563EB] shadow-2xl" />
+        {/* Lighter Accent Layer */}
+        <div className="absolute -bottom-10 -right-10 w-96 h-96 rounded-full bg-blue-400/30" />
+        
+        {/* Subtle Decorative Dot Matrix */}
+        <div 
+          className="absolute bottom-16 right-16 w-48 h-32 opacity-25"
+          style={{
+            backgroundImage: `radial-gradient(#FFFFFF 1.5px, transparent 1.5px)`,
+            backgroundSize: '12px 12px'
+          }}
+        />
+      </div>
+
+      {/* 3. MAIN WORKSPACE CONTAINER */}
+      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-12 py-6 sm:py-8 flex-1 flex flex-col lg:flex-row items-center justify-between gap-8 my-auto">
+        {/* LEFT SIDE: BRANDING & WELCOME MESSAGE */}
+        <div className="w-full lg:max-w-xl space-y-6 sm:space-y-8 flex flex-col justify-center">
+          {/* Upper Left Branding */}
+          <div className="flex items-center gap-3.5">
+            <img
+              src="/assets/app-logo.png"
+              alt="SiBiMa"
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-contain shadow-2xs flex-shrink-0"
+            />
+            <div>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                SiBiMa
+              </h1>
+              <p className="text-xs sm:text-[13px] text-slate-600 font-medium leading-tight">
+                Sistem Informasi Bimbingan Akademik
+              </p>
+            </div>
+          </div>
+
+          {/* Welcome Headline & Description */}
+          <div className="space-y-2 pt-2 sm:pt-4">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              Selamat datang kembali!
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-md">
+              Masuk untuk mengakses Sistem Informasi Bimbingan Akademik <strong className="text-blue-600 font-bold">SiBiMa</strong>.
             </p>
           </div>
         </div>
 
-        {/* Role Switcher (Compact 44px) */}
-        <div className="h-[44px] p-1 bg-[#F1F5F9] rounded-full border border-[#E2E8F0] flex items-center mb-[22px]">
-          <button
-            type="button"
-            onClick={() => handleRoleChange('mahasiswa')}
-            className={`h-full flex-1 flex items-center justify-center gap-1.5 px-3 rounded-full text-[13px] font-semibold transition-all select-none ${
-              activeRole === 'mahasiswa'
-                ? 'bg-[#2563EB] text-white shadow-2xs'
-                : 'text-[#0F172A] hover:text-[#2563EB]'
-            }`}
-          >
-            <UserRound className="w-3.5 h-3.5 stroke-[1.8]" />
-            <span>Mahasiswa</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleRoleChange('dosen')}
-            className={`h-full flex-1 flex items-center justify-center gap-1.5 px-3 rounded-full text-[13px] font-semibold transition-all select-none ${
-              activeRole === 'dosen'
-                ? 'bg-[#2563EB] text-white shadow-2xs'
-                : 'text-[#0F172A] hover:text-[#2563EB]'
-            }`}
-          >
-            <UserRound className="w-3.5 h-3.5 stroke-[1.8]" />
-            <span>Dosen</span>
-          </button>
-        </div>
-
-        {/* Friendly Error Alert */}
-        {error && (
-          <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium leading-relaxed mb-4">
-            {error}
-          </div>
-        )}
-
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Identifier Input (NIM for Mahasiswa, Email for Dosen) */}
-          <div>
-            <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">
-              {activeRole === 'mahasiswa' ? 'NIM' : 'Email'}
-            </label>
-            <div className="h-[44px] min-h-[44px] relative rounded-lg border border-[#E2E8F0] focus-within:border-[#2563EB] focus-within:ring-1 focus-within:ring-[#2563EB] bg-white transition-all shadow-2xs flex items-center">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8]">
-                <UserRound className="w-4 h-4 stroke-[1.8]" />
-              </div>
-              <input
-                type={activeRole === 'mahasiswa' ? 'text' : 'email'}
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder={
-                  activeRole === 'mahasiswa'
-                    ? 'Masukkan NIM Anda'
-                    : 'Masukkan email Anda'
-                }
-                className="w-full pl-9 pr-3.5 py-2 text-[13px] text-[#0F172A] font-medium placeholder:text-[#94A3B8] focus:outline-none bg-transparent rounded-lg"
-                required
+        {/* RIGHT SIDE: COMPACT AUTHENTICATION CARD (~400px) */}
+        <div className="w-full max-w-[390px] sm:max-w-[405px] lg:mr-8 xl:mr-12">
+          <div className="bg-white rounded-[22px] border border-slate-200/90 shadow-xl p-6 sm:p-7 space-y-4">
+            {/* Card Brand Header */}
+            <div className="text-center space-y-1">
+              <img
+                src="/assets/app-logo.png"
+                alt="SiBiMa"
+                className="w-10 h-10 rounded-xl mx-auto object-contain shadow-2xs mb-1.5"
               />
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">
+                SiBiMa
+              </h2>
+              <p className="text-[11.5px] text-slate-500 font-medium">
+                Sistem Informasi Bimbingan Akademik
+              </p>
             </div>
-          </div>
 
-          {/* Password Input */}
-          <div>
-            <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">
-              Password
-            </label>
-            <div className="h-[44px] min-h-[44px] relative rounded-lg border border-[#E2E8F0] focus-within:border-[#2563EB] focus-within:ring-1 focus-within:ring-[#2563EB] bg-white transition-all shadow-2xs flex items-center">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8]">
-                <LockKeyhole className="w-4 h-4 stroke-[1.8]" />
-              </div>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Masukkan password Anda"
-                className="w-full pl-9 pr-9 py-2 text-[13px] text-[#0F172A] font-medium placeholder:text-[#94A3B8] focus:outline-none bg-transparent rounded-lg"
-                required
-              />
+            {/* Role Switcher (Compact 44px) */}
+            <div className="h-[42px] p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#94A3B8] hover:text-[#475569] transition-colors"
-                title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                onClick={() => handleRoleChange('mahasiswa')}
+                className={`h-full flex-1 flex items-center justify-center gap-1.5 px-3 rounded-lg text-xs font-semibold transition-all select-none ${
+                  activeRole === 'mahasiswa'
+                    ? 'bg-[#2563EB] text-white shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4 stroke-[1.8]" />
-                ) : (
-                  <Eye className="w-4 h-4 stroke-[1.8]" />
-                )}
+                <UserRound className="w-3.5 h-3.5" />
+                <span>Mahasiswa</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleRoleChange('dosen')}
+                className={`h-full flex-1 flex items-center justify-center gap-1.5 px-3 rounded-lg text-xs font-semibold transition-all select-none ${
+                  activeRole === 'dosen'
+                    ? 'bg-[#2563EB] text-white shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <UserRound className="w-3.5 h-3.5" />
+                <span>Dosen</span>
               </button>
             </div>
-          </div>
 
-          {/* Remember Me Only */}
-          <div className="pt-0.5 pb-1">
-            <Checkbox
-              id="remember-me"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              label={<span className="text-xs text-[#475569] font-medium">Ingat saya</span>}
-            />
-          </div>
-
-          {/* Submit Button (44px) */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-[44px] min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-sm rounded-lg shadow-2xs transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 disabled:opacity-50 select-none active:scale-[0.99]"
-          >
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Memproses...</span>
-              </span>
-            ) : (
-              <>
-                <span>Masuk</span>
-                <ArrowRight className="w-4 h-4 stroke-[2]" />
-              </>
+            {/* Error Message Display */}
+            {error && (
+              <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium leading-tight animate-in fade-in duration-200">
+                {error}
+              </div>
             )}
-          </button>
-        </form>
 
-        {/* Compact Footer Divider */}
-        <div className="mt-[18px]">
-          <div className="relative flex items-center py-1">
-            <div className="flex-grow border-t border-[#E2E8F0]"></div>
-            <span className="flex-shrink mx-2.5 text-[11px] text-[#94A3B8] font-medium">
-              Sistem Informasi Bimbingan Akademik SiBiMa
-            </span>
-            <div className="flex-grow border-t border-[#E2E8F0]"></div>
+            {/* Form Inputs */}
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {/* Identifier Input (NIM / Email) */}
+              <div className="space-y-1">
+                <label className="text-[11.5px] font-semibold text-slate-700 block">
+                  {activeRole === 'mahasiswa' ? 'NIM' : 'Email Dosen'}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <UserRound className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={activeRole === 'mahasiswa' ? 'text' : 'email'}
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder={activeRole === 'mahasiswa' ? 'Contoh: 2210114001' : 'Contoh: dosen@unpam.ac.id'}
+                    required
+                    className="w-full h-[44px] pl-9.5 pr-3.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div className="space-y-1">
+                <label className="text-[11.5px] font-semibold text-slate-700 block">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <LockKeyhole className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Masukkan kata sandi..."
+                    required
+                    className="w-full h-[44px] pl-9.5 pr-10 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors shadow-2xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Me Checkbox */}
+              <div className="pt-0.5">
+                <Checkbox
+                  id="remember-me"
+                  label="Ingat saya"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+              </div>
+
+              {/* Submit Button (44px) */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-[44px] rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white text-xs font-bold transition-colors shadow-2xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span>Masuk</span>
+                    <ArrowRight className="w-4 h-4 stroke-[2]" />
+                  </>
+                )}
+              </button>
+
+              {/* Divider */}
+              <div className="relative flex items-center py-1">
+                <div className="flex-grow border-t border-slate-200"></div>
+                <span className="flex-shrink mx-2.5 text-[10.5px] text-slate-400 font-medium uppercase tracking-wider">
+                  atau
+                </span>
+                <div className="flex-grow border-t border-slate-200"></div>
+              </div>
+
+              {/* Institutional SSO / Alternate Account Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeRole === 'mahasiswa') {
+                    setIdentifier('2210114001');
+                    setPassword('password123');
+                  } else {
+                    setIdentifier('ahmad.asep@unpam.ac.id');
+                    setPassword('password123');
+                  }
+                }}
+                className="w-full h-[40px] rounded-lg border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors shadow-2xs flex items-center justify-center gap-2"
+              >
+                <School className="w-3.5 h-3.5 text-slate-500" />
+                <span>Masuk dengan Akun Institusi</span>
+              </button>
+            </form>
+
+            {/* Help / Footer inside card */}
+            <div className="pt-2 text-center">
+              <p className="text-[10.5px] text-slate-400 leading-tight">
+                Butuh bantuan? Hubungi <span className="font-semibold text-slate-600">administrator program studi</span> Anda.
+              </p>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* 4. PAGE FOOTER (BOTTOM-LEFT) */}
+      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-12 pb-4 text-center sm:text-left">
+        <p className="text-[11.5px] text-slate-500 font-medium tracking-tight">
+          © 2026 Sistem informasi - Universitas pamulang
+        </p>
       </div>
     </div>
   );
