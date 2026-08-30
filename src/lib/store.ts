@@ -561,6 +561,7 @@ class AppDataStore {
     academic_year_id: string;
     title: string;
     initial_problem: string;
+    guidance_date?: string;
   }): IndividualGuidanceRequest {
     const requests = getStorage<IndividualGuidanceRequest[]>(STORAGE_KEYS.INDIVIDUAL_REQUESTS, INITIAL_INDIVIDUAL_REQUESTS);
     const newReq: IndividualGuidanceRequest = {
@@ -573,7 +574,7 @@ class AppDataStore {
       status: 'DIAJUKAN',
       validation_status: 'PENDING',
       validated_at: null,
-      guidance_date: null,
+      guidance_date: data.guidance_date || null,
       action_plan: null,
       final_notes: null,
       completed_at: null,
