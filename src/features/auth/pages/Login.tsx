@@ -63,18 +63,18 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-[100dvh] w-full relative overflow-hidden bg-slate-100 font-sans text-slate-900 flex flex-col justify-between select-none">
-      {/* 1. FULL VIEWPORT CAMPUS BACKGROUND IMAGE */}
+      {/* 1. FULL VIEWPORT CAMPUS BACKGROUND IMAGE (CRISP, ZOOMED-OUT, CLEAR ARCHITECTURE) */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0 scale-105 transform transition-transform duration-1000"
+        className="absolute inset-0 bg-cover bg-[center_28%] lg:bg-[center_32%] bg-no-repeat z-0"
         style={{ backgroundImage: `url('/assets/unpam-campus.jpg')` }}
       />
 
-      {/* 2. SUBTLE LIGHT VIGNETTE / OVERLAY (CLEAR ON CAMPUS, LIGHT ON LEFT & BOTTOM) */}
-      <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/30 backdrop-blur-[0.5px] z-0" />
-      <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-white/40 z-0" />
+      {/* 2. SUBTLE FOCUSED GRADIENT (SOFT ON LEFT TEXT AREA, CLEAR ON CAMPUS & CARD) */}
+      <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/55 to-transparent z-0 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-white/85 via-transparent to-white/30 z-0 pointer-events-none" />
 
       {/* 3. BOTTOM-RIGHT ACADEMIC BLUE CURVE & DOT MATRIX ACCENT */}
-      <div className="absolute bottom-0 right-0 w-[60vw] h-[55vh] min-w-[460px] min-h-[360px] pointer-events-none z-0 hidden sm:block">
+      <div className="absolute bottom-0 right-0 w-[55vw] h-[50vh] min-w-[420px] min-h-[320px] pointer-events-none z-0 hidden sm:block">
         <svg 
           className="w-full h-full" 
           viewBox="0 0 700 500" 
@@ -86,7 +86,7 @@ export const Login: React.FC = () => {
           <path 
             d="M50 500 C 260 400, 420 270, 700 160 L 700 210 C 440 310, 280 430, 80 500 Z" 
             fill="#60A5FA" 
-            fillOpacity="0.4" 
+            fillOpacity="0.45" 
           />
           {/* Main Academic Blue Sweep */}
           <path 
@@ -101,7 +101,7 @@ export const Login: React.FC = () => {
 
         {/* Floating Dot Matrix inside the Blue Zone */}
         <div 
-          className="absolute bottom-8 right-12 w-44 h-24 opacity-30 pointer-events-none"
+          className="absolute bottom-8 right-12 w-44 h-24 opacity-35 pointer-events-none"
           style={{
             backgroundImage: `radial-gradient(#FFFFFF 1.5px, transparent 1.5px)`,
             backgroundSize: '12px 12px'
@@ -109,39 +109,42 @@ export const Login: React.FC = () => {
         />
       </div>
 
-      {/* 4. MAIN WORKSPACE */}
-      <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-16 py-6 sm:py-10 flex-1 flex flex-col justify-between">
-        {/* TOP ROW: UPPER-LEFT BRANDING */}
-        <div className="flex items-center gap-3">
-          <img
-            src="/assets/app-logo.png"
-            alt="SiBiMa"
-            className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-contain shadow-2xs flex-shrink-0"
-          />
-          <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              SiBiMa
-            </h1>
-            <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-tight">
-              Sistem Informasi<br className="sm:hidden" /> Bimbingan Akademik
-            </p>
-          </div>
-        </div>
+      {/* 4. MAIN WORKSPACE CONTAINER */}
+      <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-16 py-6 sm:py-8 flex-1 flex flex-col justify-between">
+        {/* UPPER & MIDDLE WORKSPACE */}
+        <div className="flex-1 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 my-auto">
+          {/* LEFT SIDE: BRANDING & WELCOME MESSAGE (POSITIONED TOGETHER AT TOP-LEFT) */}
+          <div className="w-full lg:max-w-md xl:max-w-lg space-y-6 pt-2 lg:pt-0 lg:-mt-16 xl:-mt-24">
+            {/* Upper-Left Branding */}
+            <div className="flex items-center gap-3">
+              <img
+                src="/assets/app-logo.png"
+                alt="SiBiMa"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-contain shadow-2xs flex-shrink-0"
+              />
+              <div>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                  SiBiMa
+                </h1>
+                <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-tight">
+                  Sistem Informasi Bimbingan Akademik
+                </p>
+              </div>
+            </div>
 
-        {/* MIDDLE ROW: WELCOME HEADLINE (LEFT) & LOGIN CARD (RIGHT) */}
-        <div className="my-auto py-6 flex flex-col lg:flex-row items-center lg:items-center justify-between gap-10">
-          {/* LEFT: WELCOME MESSAGE */}
-          <div className="w-full lg:max-w-md xl:max-w-lg space-y-3 sm:space-y-4">
-            <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-black text-slate-900 tracking-tight leading-[1.15]">
-              Selamat datang kembali!
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-sm sm:max-w-md">
-              Masuk untuk mengakses Sistem Informasi Bimbingan Akademik <strong className="text-[#2563EB] font-bold">SiBiMa</strong>.
-            </p>
+            {/* Welcome Headline & Description directly below the logo */}
+            <div className="space-y-2 pt-2 sm:pt-4">
+              <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-slate-900 tracking-tight leading-[1.2]">
+                Selamat datang kembali!
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-sm sm:max-w-md">
+                Masuk untuk mengakses Sistem Informasi Bimbingan Akademik <strong className="text-[#2563EB] font-bold">SiBiMa</strong>.
+              </p>
+            </div>
           </div>
 
-          {/* RIGHT: COMPACT AUTHENTICATION CARD (~400px) */}
-          <div className="w-full max-w-[390px] sm:max-w-[405px] lg:mr-4 xl:mr-10 flex-shrink-0">
+          {/* RIGHT SIDE: COMPACT AUTHENTICATION CARD (~400px) */}
+          <div className="w-full max-w-[390px] sm:max-w-[405px] lg:mr-4 xl:mr-8 flex-shrink-0 mx-auto lg:mx-0">
             <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.10)] p-6 sm:p-7 space-y-4">
               {/* Card Header: Logo & Title */}
               <div className="text-center space-y-1">
@@ -311,7 +314,7 @@ export const Login: React.FC = () => {
           </div>
         </div>
 
-        {/* BOTTOM ROW: COPYRIGHT FOOTER */}
+        {/* BOTTOM ROW: COPYRIGHT FOOTER (BOTTOM-LEFT) */}
         <div className="pt-4 text-center sm:text-left">
           <p className="text-[11.5px] text-slate-500 font-medium tracking-tight">
             © 2026 Sistem informasi - Universitas pamulang
