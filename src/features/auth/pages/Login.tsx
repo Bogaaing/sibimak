@@ -121,39 +121,39 @@ export const Login: React.FC = () => {
       {/* 4. MAIN WORKSPACE CONTAINER */}
       <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-16 py-6 sm:py-8 flex-1 flex flex-col justify-between">
         {/* UPPER & MIDDLE WORKSPACE */}
-        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 items-center lg:items-center gap-8 lg:gap-6 my-auto w-full">
-          {/* LEFT SIDE: BRANDING & WELCOME MESSAGE */}
-          <div className="w-full lg:col-span-5 xl:col-span-4 space-y-6 pt-2 lg:pt-0 lg:-mt-12">
-            {/* Upper-Left Branding */}
-            <div className="flex items-center gap-3">
-              <img
-                src="/assets/app-logo.png"
-                alt="SiBiMa"
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-contain shadow-2xs flex-shrink-0"
-              />
-              <div>
-                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                  SiBiMa
-                </h1>
-                <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-tight">
-                  Sistem Informasi Bimbingan Akademik
+        <div className="flex-1 flex flex-col items-center lg:items-end justify-center my-auto w-full">
+          <div className="w-full max-w-[390px] sm:max-w-[405px] space-y-4 lg:mr-4 xl:mr-10">
+            {/* BRANDING & WELCOME MESSAGE ABOVE FORM */}
+            <div className="space-y-3">
+              {/* Logo & SiBiMa Text */}
+              <div className="flex items-center gap-3">
+                <img
+                  src="/assets/app-logo.png"
+                  alt="SiBiMa"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-contain shadow-2xs flex-shrink-0"
+                />
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                    SiBiMa
+                  </h1>
+                  <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-tight">
+                    Sistem Informasi Bimbingan Akademik
+                  </p>
+                </div>
+              </div>
+
+              {/* Welcome Headline & Description */}
+              <div className="space-y-1 pt-1">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-[1.2]">
+                  Selamat datang kembali!
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                  Masuk untuk mengakses Sistem Informasi Bimbingan Akademik <strong className="text-[#2563EB] font-bold">SiBiMa</strong>.
                 </p>
               </div>
             </div>
 
-            {/* Welcome Headline & Description directly below the logo */}
-            <div className="space-y-2 pt-2 sm:pt-4">
-              <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-slate-900 tracking-tight leading-[1.2]">
-                Selamat datang kembali!
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-sm sm:max-w-md">
-                Masuk untuk mengakses Sistem Informasi Bimbingan Akademik <strong className="text-[#2563EB] font-bold">SiBiMa</strong>.
-              </p>
-            </div>
-          </div>
-
-          {/* CENTER: COMPACT AUTHENTICATION CARD (~400px, UNBLOCKS UNPAM LOGO ON RIGHT) */}
-          <div className="w-full max-w-[390px] sm:max-w-[405px] lg:col-span-5 xl:col-span-4 lg:col-start-6 xl:col-start-5 mx-auto">
+            {/* AUTHENTICATION CARD */}
             <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.10)] p-6 sm:p-7 space-y-4">
               {/* Role Switcher Pill (42px) */}
               <div className="h-[42px] p-1 bg-[#F1F5F9] rounded-xl border border-slate-200/70 flex items-center gap-1">
