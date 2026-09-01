@@ -58,23 +58,24 @@ export const authService = {
       }
     }
 
-    // Local / Demo Mode fallback
+    // Local / Demo Mode session check
     const savedUserId = localStorage.getItem('sibimak_current_user_id');
-    const profile = savedUserId ? store.getProfileById(savedUserId) : store.getProfiles().find(p => p.role === 'mahasiswa');
-    
-    if (profile) {
-      const lecturerProfile = profile.role === 'dosen' 
-        ? store.getLecturers().find(l => l.id === profile.id) 
-        : undefined;
-      const studentProfile = profile.role === 'mahasiswa' 
-        ? store.getStudents().find(s => s.id === profile.id) 
-        : undefined;
+    if (savedUserId) {
+      const profile = store.getProfileById(savedUserId);
+      if (profile) {
+        const lecturerProfile = profile.role === 'dosen' 
+          ? store.getLecturers().find(l => l.id === profile.id) 
+          : undefined;
+        const studentProfile = profile.role === 'mahasiswa' 
+          ? store.getStudents().find(s => s.id === profile.id) 
+          : undefined;
 
-      return {
-        user: profile,
-        lecturerProfile,
-        studentProfile
-      };
+        return {
+          user: profile,
+          lecturerProfile,
+          studentProfile
+        };
+      }
     }
 
     return { user: null };
