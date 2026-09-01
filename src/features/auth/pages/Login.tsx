@@ -121,9 +121,9 @@ export const Login: React.FC = () => {
       {/* 4. MAIN WORKSPACE CONTAINER */}
       <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-16 py-6 sm:py-8 flex-1 flex flex-col justify-between">
         {/* UPPER & MIDDLE WORKSPACE */}
-        <div className="flex-1 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 my-auto">
-          {/* LEFT SIDE: BRANDING & WELCOME MESSAGE (POSITIONED TOGETHER AT TOP-LEFT) */}
-          <div className="w-full lg:max-w-md xl:max-w-lg space-y-6 pt-2 lg:pt-0 lg:-mt-16 xl:-mt-24">
+        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 items-center lg:items-center gap-8 lg:gap-6 my-auto w-full">
+          {/* LEFT SIDE: BRANDING & WELCOME MESSAGE */}
+          <div className="w-full lg:col-span-5 xl:col-span-4 space-y-6 pt-2 lg:pt-0 lg:-mt-12">
             {/* Upper-Left Branding */}
             <div className="flex items-center gap-3">
               <img
@@ -152,8 +152,8 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          {/* RIGHT SIDE: COMPACT AUTHENTICATION CARD (~400px) */}
-          <div className="w-full max-w-[390px] sm:max-w-[405px] lg:mr-4 xl:mr-8 flex-shrink-0 mx-auto lg:mx-0">
+          {/* CENTER: COMPACT AUTHENTICATION CARD (~400px, UNBLOCKS UNPAM LOGO ON RIGHT) */}
+          <div className="w-full max-w-[390px] sm:max-w-[405px] lg:col-span-5 xl:col-span-4 lg:col-start-6 xl:col-start-5 mx-auto">
             <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.10)] p-6 sm:p-7 space-y-4">
               {/* Role Switcher Pill (42px) */}
               <div className="h-[42px] p-1 bg-[#F1F5F9] rounded-xl border border-slate-200/70 flex items-center gap-1">
