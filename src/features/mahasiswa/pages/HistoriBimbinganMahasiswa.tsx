@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import { Header } from '../../../components/layout/Header';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { store } from '../../../lib/store';
@@ -25,13 +24,17 @@ export const HistoriBimbinganMahasiswa: React.FC = () => {
   const individualRequests = store.getIndividualRequests().filter(r => r.student_id === studentId);
 
   return (
-    <div className="flex-1 pb-12">
-      <Header
-        title="Histori & Formulir Bimbingan Akademik"
-        description="Rekapitulasi seluruh riwayat pelaksanaan bimbingan akademik kelas dan individu."
-      />
+    <div className="space-y-5 sm:space-y-6 pb-6">
+      <div className="space-y-1">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+          Histori & Formulir Bimbingan
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500">
+          Rekapitulasi seluruh riwayat pelaksanaan bimbingan akademik kelas dan individu.
+        </p>
+      </div>
 
-      <div className="p-8 space-y-6 max-w-5xl mx-auto">
+      <div className="space-y-6">
         {/* Banner with Direct Print Button */}
         <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
           <div>
