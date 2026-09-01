@@ -155,21 +155,6 @@ export const Login: React.FC = () => {
           {/* RIGHT SIDE: COMPACT AUTHENTICATION CARD (~400px) */}
           <div className="w-full max-w-[390px] sm:max-w-[405px] lg:mr-4 xl:mr-8 flex-shrink-0 mx-auto lg:mx-0">
             <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.10)] p-6 sm:p-7 space-y-4">
-              {/* Card Header: Logo & Title */}
-              <div className="text-center space-y-1">
-                <img
-                  src="/assets/app-logo.png"
-                  alt="SiBiMa"
-                  className="w-11 h-11 rounded-xl mx-auto object-contain shadow-2xs mb-1"
-                />
-                <h3 className="text-xl font-bold text-slate-900 tracking-tight leading-tight">
-                  SiBiMa
-                </h3>
-                <p className="text-[11.5px] text-slate-500 font-medium">
-                  Sistem Informasi Bimbingan Akademik
-                </p>
-              </div>
-
               {/* Role Switcher Pill (42px) */}
               <div className="h-[42px] p-1 bg-[#F1F5F9] rounded-xl border border-slate-200/70 flex items-center gap-1">
                 <button
