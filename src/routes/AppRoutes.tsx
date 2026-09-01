@@ -30,9 +30,33 @@ import { InfoDosenPA } from '../features/mahasiswa/pages/InfoDosenPA';
 import { BimbinganKelasMahasiswa } from '../features/mahasiswa/pages/BimbinganKelasMahasiswa';
 import { PengajuanBimbinganIndividu } from '../features/mahasiswa/pages/PengajuanBimbinganIndividu';
 import { HistoriBimbinganMahasiswa } from '../features/mahasiswa/pages/HistoriBimbinganMahasiswa';
-
-// Report / Print Page
 import { FormulirBimbinganPrint } from '../features/report/pages/FormulirBimbinganPrint';
+
+import { useAuth } from '../hooks/useAuth';
+
+// Intelligent Root & Fallback Redirect
+const RootRedirect: React.FC = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] text-slate-900 font-sans">
+        <div className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs text-slate-600 font-bold">Memverifikasi sesi akademik...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user) {
+    if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === 'dosen') return <Navigate to="/dosen/dashboard" replace />;
+    if (user.role === 'mahasiswa') return <Navigate to="/mahasiswa/dashboard" replace />;
+  }
+
+  return <Navigate to="/login" replace />;
+};
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -87,9 +111,9 @@ export const AppRoutes: React.FC = () => {
         </Route>
       </Route>
 
-      {/* Root redirect */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      {/* Intelligent Root & Catch-all Fallback */}
+      <Route path="/" element={<RootRedirect />} />
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   );
 };

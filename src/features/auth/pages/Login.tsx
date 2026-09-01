@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { 
@@ -12,7 +12,7 @@ import {
 import { Checkbox } from '../../../components/ui/Checkbox';
 
 export const Login: React.FC = () => {
-  const { loginWithNIM, loginWithEmail } = useAuth();
+  const { user, isLoading: isAuthLoading, loginWithNIM, loginWithEmail } = useAuth();
   const navigate = useNavigate();
 
   const [activeRole, setActiveRole] = useState<'mahasiswa' | 'dosen'>('mahasiswa');
@@ -22,6 +22,15 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto redirect if user is already logged in
+  useEffect(() => {
+    if (!isAuthLoading && user) {
+      if (user.role === 'admin') navigate('/admin/dashboard', { replace: true });
+      else if (user.role === 'dosen') navigate('/dosen/dashboard', { replace: true });
+      else if (user.role === 'mahasiswa') navigate('/mahasiswa/dashboard', { replace: true });
+    }
+  }, [user, isAuthLoading, navigate]);
 
   const handleRoleChange = (role: 'mahasiswa' | 'dosen') => {
     setActiveRole(role);
