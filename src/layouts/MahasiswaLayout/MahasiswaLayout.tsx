@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { store } from '../../lib/store';
 import { useAuth } from '../../hooks/useAuth';
+import { PWAInstallPrompt } from '../../components/pwa/PWAInstallPrompt';
 
 export const MahasiswaLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -286,6 +287,9 @@ export const MahasiswaLayout: React.FC = () => {
           <span className="text-[10.5px] leading-tight">Profil</span>
         </NavLink>
       </nav>
+
+      {/* 4. PWA INSTALL PROMPT (CUSTOM BOTTOM SHEET / MODAL) */}
+      <PWAInstallPrompt />
     </div>
   );
 };
