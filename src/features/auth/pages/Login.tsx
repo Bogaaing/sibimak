@@ -121,8 +121,8 @@ export const Login: React.FC = () => {
       {/* 4. MAIN WORKSPACE CONTAINER */}
       <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-16 py-6 sm:py-8 flex-1 flex flex-col justify-between">
         {/* UPPER & MIDDLE WORKSPACE */}
-        <div className="flex-1 flex flex-col items-center lg:items-end justify-center my-auto w-full">
-          <div className="w-full max-w-[390px] sm:max-w-[405px] space-y-4 lg:mr-4 xl:mr-10">
+        <div className="flex-1 flex flex-col items-center lg:items-start justify-center my-auto w-full">
+          <div className="w-full max-w-[390px] sm:max-w-[405px] space-y-4 lg:ml-4 xl:ml-8">
             {/* BRANDING & WELCOME MESSAGE ABOVE FORM */}
             <div className="space-y-3">
               {/* Logo & SiBiMa Text */}
