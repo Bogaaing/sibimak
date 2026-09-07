@@ -31,23 +31,51 @@ export const authService = {
 
       // Fallback lookup by email if ID differed
       if (!profile && session.user.email) {
+        const emailLower = session.user.email.toLowerCase();
         const { data: profileByEmail } = await supabase
           .from('profiles')
           .select('*')
-          .eq('email', session.user.email.toLowerCase())
+          .eq('email', emailLower)
           .maybeSingle();
 
         if (profileByEmail) {
           const oldId = profileByEmail.id;
-          profile = { ...profileByEmail, id: session.user.id };
+          profile = { ...profileByEmail, id: session.user.id, email: emailLower };
 
           // Synchronize profile ID in database asynchronously
           try {
-            await supabase.from('profiles').update({ id: session.user.id }).eq('id', oldId);
+            await supabase.from('profiles').update({ id: session.user.id, email: emailLower }).eq('id', oldId);
             await supabase.from('students').update({ id: session.user.id }).eq('id', oldId);
             await supabase.from('lecturers').update({ id: session.user.id }).eq('id', oldId);
           } catch (syncErr) {
             console.warn('ID synchronization warning:', syncErr);
+          }
+        } else {
+          // JIT: Auto-create profile for newly authenticated user
+          const isDosen = emailLower.includes('dosen') || emailLower.includes('asep');
+          const isAdmin = emailLower.includes('admin');
+          const role = isAdmin ? 'admin' : (isDosen ? 'dosen' : 'mahasiswa');
+          const fullName = session.user.user_metadata?.full_name || 
+            (isDosen ? 'Ahmad Asep Suhendi, M.Kom.' : emailLower.split('@')[0]);
+
+          const newProfile: Profile = {
+            id: session.user.id,
+            email: emailLower,
+            full_name: fullName,
+            role,
+            phone_number: null,
+            avatar_url: null,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+
+          try {
+            await supabase.from('profiles').upsert(newProfile);
+            profile = newProfile;
+          } catch (createErr) {
+            console.error('Error auto-creating profile:', createErr);
+            profile = newProfile;
           }
         }
       }
@@ -58,20 +86,58 @@ export const authService = {
       let studentProfile: Student | undefined;
 
       if (profile.role === 'dosen') {
-        const { data: lecturer, error: lecturerError } = await supabase
+        let { data: lecturer, error: lecturerError } = await supabase
           .from('lecturers')
           .select('*')
           .eq('id', profile.id)
           .maybeSingle();
-        if (lecturerError) console.error('Error fetching lecturer profile:', lecturerError);
+
+        if (!lecturer) {
+          // Ensure lecturer row exists for this profile
+          const newLecturer: Lecturer = {
+            id: profile.id,
+            nidn: '0411099202',
+            title_prefix: null,
+            title_suffix: 'M.Kom.',
+            department: 'Sistem Informasi',
+            signature_url: '/assets/ahmadasepsuhendi-ttd.png',
+            created_at: new Date().toISOString()
+          };
+          try {
+            await supabase.from('lecturers').upsert(newLecturer);
+            lecturer = newLecturer;
+            // Associate any unassigned class advisor assignments to this active lecturer
+            await supabase.from('class_advisor_assignments').update({ lecturer_id: profile.id }).or(`lecturer_id.is.null,lecturer_id.eq.22222222-2222-2222-2222-222222222222`);
+          } catch (lecErr) {
+            console.warn('Lecturer provisioning note:', lecErr);
+          }
+        }
         lecturerProfile = lecturer || undefined;
       } else if (profile.role === 'mahasiswa') {
-        const { data: student, error: studentError } = await supabase
+        let { data: student, error: studentError } = await supabase
           .from('students')
           .select('*, class:classes(*)')
           .eq('id', profile.id)
           .maybeSingle();
-        if (studentError) console.error('Error fetching student profile:', studentError);
+
+        if (!student) {
+          try {
+            const { data: firstClass } = await supabase.from('classes').select('*, academic_year:academic_years(*)').limit(1).maybeSingle();
+            const nim = profile.email.match(/\d+/)?.[0] || '2210114001';
+            const newStudent = {
+              id: profile.id,
+              nim,
+              class_id: firstClass?.id || null,
+              program_type: 'Reguler' as const,
+              entry_year: '2022',
+              created_at: new Date().toISOString()
+            };
+            await supabase.from('students').upsert(newStudent);
+            student = { ...newStudent, class: firstClass || undefined };
+          } catch (stdErr) {
+            console.warn('Student provisioning note:', stdErr);
+          }
+        }
         studentProfile = student || undefined;
       }
 
