@@ -9,7 +9,6 @@ import {
   Calendar,
   MapPin,
   CheckCircle2,
-  MessageSquare,
   Clock,
   AlertTriangle,
   UserRound,
@@ -230,27 +229,6 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Student Submitted Notes (if any) */}
-                {p.student_notes && (
-                  <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs space-y-1">
-                    <span className="font-bold text-amber-900 flex items-center gap-1.5">
-                      <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
-                      Catatan / Pertanyaan Anda:
-                    </span>
-                    <p className="text-amber-800 leading-relaxed pl-5">{p.student_notes}</p>
-                  </div>
-                )}
-
-                {/* Feedback from Lecturer (if any) */}
-                {p.lecturer_feedback && (
-                  <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs space-y-1">
-                    <span className="font-bold text-blue-900 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-700" />
-                      Tanggapan dari Dosen PA:
-                    </span>
-                    <p className="text-blue-800 leading-relaxed pl-5">{p.lecturer_feedback}</p>
-                  </div>
-                )}
 
                 {/* Action Row */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3">
