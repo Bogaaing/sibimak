@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { Bell, Calendar, ChevronDown, Menu } from 'lucide-react';
-import { store } from '../../lib/store';
+import { supabase } from '../../lib/supabase';
+import { AcademicYear } from '../../types/database.types';
 
 interface HeaderProps {
   title?: string;
@@ -11,7 +12,18 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ title, description, onMenuToggle }) => {
   const { user } = useAuth();
-  const activeYear = store.getActiveAcademicYear();
+  const [activeYear, setActiveYear] = useState<AcademicYear | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from('academic_years')
+      .select('*')
+      .eq('is_active', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setActiveYear(data);
+      });
+  }, []);
 
   return (
     <header className="no-print bg-white border-b border-slate-200/90 h-[72px] px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
@@ -41,19 +53,16 @@ export const Header: React.FC<HeaderProps> = ({ title, description, onMenuToggle
         {/* Academic Year Dropdown Selector */}
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-xs text-slate-700 font-medium shadow-2xs">
           <Calendar className="w-3.5 h-3.5 text-slate-500" />
-          <span className="font-semibold">{activeYear?.name || 'Tahun Akademik 2026/2027 Ganjil'}</span>
+          <span className="font-semibold">{activeYear?.name || 'Tahun Akademik'}</span>
           <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
         </div>
 
-        {/* Notifications with Badge */}
+        {/* Notifications */}
         <button
           title="Notifikasi"
           className="relative p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-2xs"
         >
           <Bell className="w-4 h-4" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9.5px] font-bold flex items-center justify-center border-2 border-white shadow-2xs">
-            3
-          </span>
         </button>
 
         {/* Role Pill Dropdown */}

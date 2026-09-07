@@ -428,7 +428,7 @@ export const BimbinganIndividuList: React.FC = () => {
                   ) : (
                     messages.map((m) => {
                       const isMe = m.sender_profile_id === user?.id;
-                      const senderName = m.sender?.full_name || (isMe ? 'Ahmad Asep Suhendi' : selectedRequest.student?.profile?.full_name);
+                      const senderName = m.sender?.full_name || (isMe ? (user?.full_name || 'Dosen PA') : (selectedRequest.student?.profile?.full_name || 'Mahasiswa'));
                       const senderRole = isMe ? 'dosen' : 'mahasiswa';
 
                       return (

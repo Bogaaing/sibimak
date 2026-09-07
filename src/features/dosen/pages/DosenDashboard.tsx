@@ -40,25 +40,29 @@ export const DosenDashboard: React.FC = () => {
   );
 
   // Metrics
-  const totalClasses = assignments.length || 2;
-  const totalStudents = students.length || 3;
-  const totalClassSessions = classSessions.length || 3;
-  const totalIndividual = individualRequests.length || 1;
+  const totalClasses = assignments.length;
+  const totalStudents = students.length;
+  const totalClassSessions = classSessions.length;
+  const totalIndividual = individualRequests.length;
   
   // Pending validations: HADIR and PENDING
   const pendingValidations = participants.filter(
     (p) => p.attendance_status === 'HADIR' && p.validation_status === 'PENDING'
-  ).length || 2;
+  ).length;
+
+  const pendingConsultations = individualRequests.filter(
+    (r) => r.status === 'DIAJUKAN' || r.status === 'DIPROSES'
+  );
 
   // Attendance metrics breakdown for Donut Chart
-  const hadirCount = participants.filter((p) => p.attendance_status === 'HADIR').length || 2;
-  const belumKonfirmasiCount = participants.filter((p) => p.attendance_status === 'BELUM_KONFIRMASI').length || 1;
-  const izinCount = participants.filter((p) => p.attendance_status === 'IZIN').length || 0;
-  const tidakHadirCount = participants.filter((p) => p.attendance_status === 'TIDAK_HADIR').length || 0;
+  const hadirCount = participants.filter((p) => p.attendance_status === 'HADIR').length;
+  const belumKonfirmasiCount = participants.filter((p) => p.attendance_status === 'BELUM_KONFIRMASI').length;
+  const izinCount = participants.filter((p) => p.attendance_status === 'IZIN').length;
+  const tidakHadirCount = participants.filter((p) => p.attendance_status === 'TIDAK_HADIR').length;
 
-  const totalCalculated = hadirCount + belumKonfirmasiCount + izinCount + tidakHadirCount || 3;
-  const hadirPercent = ((hadirCount / totalCalculated) * 100).toFixed(2);
-  const belumPercent = ((belumKonfirmasiCount / totalCalculated) * 100).toFixed(2);
+  const totalCalculated = hadirCount + belumKonfirmasiCount + izinCount + tidakHadirCount;
+  const hadirPercent = totalCalculated > 0 ? ((hadirCount / totalCalculated) * 100).toFixed(1) : '0';
+  const belumPercent = totalCalculated > 0 ? ((belumKonfirmasiCount / totalCalculated) * 100).toFixed(1) : '0';
 
   return (
     <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -165,76 +169,87 @@ export const DosenDashboard: React.FC = () => {
             </h3>
 
             <div className="space-y-3.5">
-              {/* Item 1: Validasi Mahasiswa */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
-                    <UsersRound className="w-4 h-4 stroke-[1.8]" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate">
-                      2 mahasiswa menunggu validasi
-                    </p>
-                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                      Sesi Persiapan UTS • Kelas SI-5A
-                    </p>
-                  </div>
+              {pendingValidations === 0 && pendingConsultations.length === 0 && belumKonfirmasiCount === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  Semua tindakan telah selesai. Tidak ada tugas tertunda.
                 </div>
-                <Link
-                  to="/dosen/bimbingan-kelas"
-                  className="flex-shrink-0 px-3 py-1 rounded-md border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors flex items-center gap-1"
-                >
-                  <Eye className="w-3.5 h-3.5 stroke-[1.8]" />
-                  <span>Lihat</span>
-                </Link>
-              </div>
+              ) : (
+                <>
+                  {pendingValidations > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
+                          <UsersRound className="w-4 h-4 stroke-[1.8]" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            {pendingValidations} kehadiran menunggu validasi
+                          </p>
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            Bimbingan Kelas
+                          </p>
+                        </div>
+                      </div>
+                      <Link
+                        to="/dosen/bimbingan-kelas"
+                        className="flex-shrink-0 px-3 py-1 rounded-md border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors flex items-center gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5 stroke-[1.8]" />
+                        <span>Lihat</span>
+                      </Link>
+                    </div>
+                  )}
 
-              {/* Item 2: Konsultasi Individu Baru */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
-                    <MessagesSquare className="w-4 h-4 stroke-[1.8]" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate">
-                      1 konsultasi individu baru
-                    </p>
-                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                      Dari Siti Aisyah
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  to="/dosen/bimbingan-individu"
-                  className="flex-shrink-0 px-3 py-1 rounded-md border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
-                >
-                  Tanggapi
-                </Link>
-              </div>
+                  {pendingConsultations.length > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+                          <MessagesSquare className="w-4 h-4 stroke-[1.8]" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            {pendingConsultations.length} konsultasi perlu ditanggapi
+                          </p>
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            Konsultasi Mahasiswa
+                          </p>
+                        </div>
+                      </div>
+                      <Link
+                        to="/dosen/bimbingan-individu"
+                        className="flex-shrink-0 px-3 py-1 rounded-md border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
+                      >
+                        Tanggapi
+                      </Link>
+                    </div>
+                  )}
 
-              {/* Item 3: Belum Konfirmasi */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
-                    <AlertTriangle className="w-4 h-4 stroke-[1.8]" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate">
-                      3 mahasiswa belum konfirmasi
-                    </p>
-                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                      Sesi Pengarahan Akhir Semester • Kelas SI-5B
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  to="/dosen/bimbingan-kelas"
-                  className="flex-shrink-0 px-3 py-1 rounded-md border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors flex items-center gap-1"
-                >
-                  <Eye className="w-3.5 h-3.5 stroke-[1.8]" />
-                  <span>Lihat</span>
-                </Link>
-              </div>
+                  {belumKonfirmasiCount > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
+                          <AlertTriangle className="w-4 h-4 stroke-[1.8]" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            {belumKonfirmasiCount} mahasiswa belum konfirmasi
+                          </p>
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            Bimbingan Kelas
+                          </p>
+                        </div>
+                      </div>
+                      <Link
+                        to="/dosen/bimbingan-kelas"
+                        className="flex-shrink-0 px-3 py-1 rounded-md border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors flex items-center gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5 stroke-[1.8]" />
+                        <span>Lihat</span>
+                      </Link>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
@@ -505,105 +520,48 @@ export const DosenDashboard: React.FC = () => {
           </div>
 
           <div className="space-y-4 text-xs">
-            {/* Item 1 */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0 mt-0.5">
-                  <BookOpenCheck className="w-3.5 h-3.5 stroke-[1.8]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-900 leading-tight">
-                    Sesi bimbingan kelas baru dibuat
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Persiapan UTS • Kelas SI-5A
-                  </p>
-                </div>
+            {classSessions.length === 0 && individualRequests.length === 0 ? (
+              <div className="py-8 text-center text-slate-400">
+                <p className="text-xs">Belum ada aktivitas terbaru.</p>
               </div>
-              <span className="text-[11px] text-slate-400 font-mono flex-shrink-0">
-                09:15
-              </span>
-            </div>
-
-            {/* Item 2 */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0 mt-0.5">
-                  <Check className="w-3.5 h-3.5 stroke-[2]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-900 leading-tight">
-                    Ahmad Fauzi mengonfirmasi kehadiran
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Persiapan UTS • Kelas SI-5A
-                  </p>
-                </div>
-              </div>
-              <span className="text-[11px] text-slate-400 font-mono flex-shrink-0">
-                10:02
-              </span>
-            </div>
-
-            {/* Item 3 */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0 mt-0.5">
-                  <UsersRound className="w-3.5 h-3.5 stroke-[1.8]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-900 leading-tight">
-                    2 mahasiswa perlu validasi
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Persiapan UTS • Kelas SI-5A
-                  </p>
-                </div>
-              </div>
-              <span className="text-[11px] text-slate-400 font-mono flex-shrink-0">
-                10:15
-              </span>
-            </div>
-
-            {/* Item 4 */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
-                  <MessagesSquare className="w-3.5 h-3.5 stroke-[1.8]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-900 leading-tight">
-                    Konsultasi baru dari Siti Aisyah
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Topik: Pemilihan Topik Skripsi
-                  </p>
-                </div>
-              </div>
-              <span className="text-[11px] text-slate-400 font-mono flex-shrink-0">
-                10:35
-              </span>
-            </div>
-
-            {/* Item 5 */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 flex-shrink-0 mt-0.5">
-                  <ClipboardCheck className="w-3.5 h-3.5 stroke-[1.8]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-900 leading-tight">
-                    Dwi Lestari menambahkan catatan
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Persiapan UTS • Kelas SI-5B
-                  </p>
-                </div>
-              </div>
-              <span className="text-[11px] text-slate-400 font-mono flex-shrink-0">
-                11:01
-              </span>
-            </div>
+            ) : (
+              <>
+                {classSessions.slice(0, 3).map((cs) => (
+                  <div key={cs.id} className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0 mt-0.5">
+                        <BookOpenCheck className="w-3.5 h-3.5 stroke-[1.8]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 leading-tight">
+                          {cs.title}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Sesi Kelas • {cs.session_date}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {individualRequests.slice(0, 3).map((ir) => (
+                  <div key={ir.id} className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
+                        <MessagesSquare className="w-3.5 h-3.5 stroke-[1.8]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 leading-tight">
+                          Konsultasi: {ir.title}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Status: {ir.status}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>

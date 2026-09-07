@@ -156,7 +156,7 @@ export const AdminDashboard: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-3.5 py-3 font-semibold text-slate-800">
-                        {a.lecturer?.profile?.full_name || 'Ahmad Asep Suhendi, M.Kom.'}
+                        {a.lecturer?.profile?.full_name || '-'}
                       </td>
                       <td className="px-3.5 py-3 text-slate-600 font-medium">
                         {a.class?.study_program}

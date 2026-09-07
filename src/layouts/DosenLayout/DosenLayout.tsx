@@ -260,10 +260,10 @@ export const DosenLayout: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-[12.5px] font-bold text-slate-900 truncate leading-tight">
-                  {user?.full_name || 'Ahmad Asep Suhendi'}
+                  {user?.full_name || 'Dosen'}
                 </p>
                 <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5 leading-tight">
-                  Dosen PA • NIDN 0411099202
+                  Dosen Pembimbing Akademik
                 </p>
               </div>
             </div>
@@ -303,7 +303,7 @@ export const DosenLayout: React.FC = () => {
 
               <div>
                 <h2 className="text-[16px] sm:text-[17px] font-bold text-slate-900 leading-tight truncate">
-                  Selamat datang, {user?.full_name || 'Ahmad Asep Suhendi'}
+                  Selamat datang, {user?.full_name || 'Dosen'}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5 leading-tight truncate hidden sm:block">
                   Kelola bimbingan akademik kelas dan konsultasi individual mahasiswa Anda.

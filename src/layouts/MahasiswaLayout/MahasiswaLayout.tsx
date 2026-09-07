@@ -13,7 +13,7 @@ import {
   GraduationCap,
   BookOpen
 } from 'lucide-react';
-import { store } from '../../lib/store';
+import { mahasiswaService, StudentFullData, StudentNotificationItem } from '../../services/mahasiswa.service';
 import { useAuth } from '../../hooks/useAuth';
 import { PWAInstallPrompt } from '../../components/pwa/PWAInstallPrompt';
 
@@ -25,9 +25,30 @@ export const MahasiswaLayout: React.FC = () => {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  const studentId = user?.id;
-  const currentStudent = store.getStudents().find((s) => s.id === studentId);
-  const myClass = currentStudent?.class || store.getClasses().find((c) => c.id === currentStudent?.class_id);
+  const [academicData, setAcademicData] = useState<StudentFullData | null>(null);
+  const [notifications, setNotifications] = useState<StudentNotificationItem[]>([]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let isMounted = true;
+
+    mahasiswaService.getStudentAcademicData(user.id)
+      .then(async (data) => {
+        if (!isMounted) return;
+        setAcademicData(data);
+        const notifs = await mahasiswaService.getNotifications(user.id, data.academicClass?.id);
+        if (isMounted) {
+          setNotifications(notifs);
+        }
+      })
+      .catch((err) => {
+        console.warn('Error fetching academic data or notifs:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -92,7 +113,9 @@ export const MahasiswaLayout: React.FC = () => {
               className="relative w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-700 flex items-center justify-center transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
               <Bell className="w-5 h-5 stroke-[1.8]" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#EA580C] rounded-full ring-2 ring-white"></span>
+              {notifications.length > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-[#EA580C] rounded-full ring-2 ring-white"></span>
+              )}
             </button>
 
             {/* Notification Popover */}
@@ -102,35 +125,34 @@ export const MahasiswaLayout: React.FC = () => {
                   <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                     Notifikasi Terbaru
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">
-                    2 Baru
-                  </span>
+                  {notifications.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">
+                      {notifications.length} Baru
+                    </span>
+                  )}
                 </div>
                 <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
-                  <Link
-                    to="/mahasiswa/bimbingan"
-                    onClick={() => setIsNotifOpen(false)}
-                    className="p-3.5 block hover:bg-slate-50 transition-colors"
-                  >
-                    <p className="text-xs font-bold text-slate-900">
-                      Pengarahan Bimbingan Kelas
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Dosen PA menjadwalkan agenda bimbingan kelas. Silakan konfirmasi kehadiran Anda.
-                    </p>
-                  </Link>
-                  <Link
-                    to="/mahasiswa/konsultasi"
-                    onClick={() => setIsNotifOpen(false)}
-                    className="p-3.5 block hover:bg-slate-50 transition-colors"
-                  >
-                    <p className="text-xs font-bold text-slate-900">
-                      Tanggapan Konsultasi Individu
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Dosen PA telah memberikan tanggapan pada konsultasi Anda.
-                    </p>
-                  </Link>
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-500">
+                      Tidak ada notifikasi baru
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <Link
+                        key={notif.id}
+                        to={notif.link}
+                        onClick={() => setIsNotifOpen(false)}
+                        className="p-3.5 block hover:bg-slate-50 transition-colors"
+                      >
+                        <p className="text-xs font-bold text-slate-900">
+                          {notif.title}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {notif.message}
+                        </p>
+                      </Link>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -156,11 +178,11 @@ export const MahasiswaLayout: React.FC = () => {
                 <div className="px-4 py-2.5 border-b border-slate-100">
                   <p className="text-xs font-bold text-slate-900 truncate">{user?.full_name}</p>
                   <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                    NIM: {currentStudent?.nim || '2022010101'}
+                    NIM: {academicData?.student?.nim || '-'}
                   </p>
                   <div className="mt-1.5 flex items-center gap-1.5">
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                      {myClass?.name || 'SI-5A'}
+                      {academicData?.academicClass?.name || 'Belum Ada Kelas'}
                     </span>
                     <span className="text-[10.5px] text-slate-500">Mahasiswa</span>
                   </div>

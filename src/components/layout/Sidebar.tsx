@@ -388,7 +388,7 @@ export const Sidebar: React.FC = () => {
               </p>
               <p className="text-[10px] text-slate-400 truncate mt-0.5 leading-tight">
                 {user?.role === 'dosen'
-                  ? `Dosen PA • NIDN ${lecturerProfile?.nidn || '0411099202'}`
+                  ? (lecturerProfile?.nidn ? `Dosen PA • NIDN ${lecturerProfile.nidn}` : 'Dosen Pembimbing Akademik')
                   : user?.role?.toUpperCase()}
               </p>
             </div>

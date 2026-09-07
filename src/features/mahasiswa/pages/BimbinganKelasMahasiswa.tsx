@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { Button } from '../../../components/ui/Button';
 import { Modal } from '../../../components/ui/Modal';
 import { Select } from '../../../components/ui/Select';
-import { store } from '../../../lib/store';
 import {
   ArrowLeft,
   ArrowRight,
@@ -19,40 +18,26 @@ import {
   CalendarCheck,
   MessageSquare,
   BookOpen,
+  RefreshCw,
 } from 'lucide-react';
 import { formatDate, getLecturerFullName } from '../../../lib/utils';
 import { AttendanceStatus } from '../../../types/database.types';
+import { 
+  mahasiswaService, 
+  StudentFullData, 
+  StudentClassSessionItem 
+} from '../../../services/mahasiswa.service';
 
 export const BimbinganKelasMahasiswa: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const studentId = user?.id;
 
-  const currentStudent = useMemo(() => {
-    return store.getStudents().find((s) => s.id === studentId);
-  }, [studentId]);
-
-  const myClassId = currentStudent?.class_id;
-  const assignment = useMemo(() => {
-    if (!myClassId) return undefined;
-    return store.getAssignments().find((a) => a.class_id === myClassId && a.is_active);
-  }, [myClassId]);
-
-  const lecturer = useMemo(() => {
-    if (assignment?.lecturer) return assignment.lecturer;
-    if (assignment?.lecturer_id) {
-      return store.getLecturers().find((l) => l.id === assignment.lecturer_id);
-    }
-    return undefined;
-  }, [assignment]);
-
-  const activeAcademicYear = useMemo(() => {
-    return store.getActiveAcademicYear();
-  }, []);
-
-  const [participations, setParticipations] = useState(() =>
-    store.getParticipants().filter((p) => p.student_id === studentId)
-  );
+  const [studentData, setStudentData] = useState<StudentFullData | null>(null);
+  const [classSessions, setClassSessions] = useState<StudentClassSessionItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -67,6 +52,30 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
     attendance_status: 'HADIR' as AttendanceStatus,
     student_notes: '',
   });
+
+  const loadData = useCallback(async () => {
+    if (!studentId) return;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const academicData = await mahasiswaService.getStudentAcademicData(studentId);
+      setStudentData(academicData);
+
+      const classId = academicData.student?.class_id || undefined;
+      const sessions = await mahasiswaService.getClassGuidanceSessions(studentId, classId);
+      setClassSessions(sessions);
+    } catch (err: any) {
+      console.error('Error loading class guidance sessions:', err);
+      setError('Gagal memuat data bimbingan. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [studentId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleOpenConfirm = (sessionId: string, currentStatus: AttendanceStatus, currentNotes?: string | null) => {
     setSelectedSessionId(sessionId);
@@ -86,25 +95,47 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
     setIsNotesModalOpen(true);
   };
 
-  const handleSaveConfirm = (e: React.FormEvent) => {
+  const handleSaveConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSessionId || !studentId) return;
 
-    store.updateParticipantAttendance(
-      selectedSessionId,
-      studentId,
-      confirmForm.attendance_status,
-      confirmForm.student_notes
-    );
+    setIsSubmitting(true);
+    try {
+      await mahasiswaService.confirmClassGuidanceAttendance(
+        selectedSessionId,
+        studentId,
+        confirmForm.attendance_status,
+        confirmForm.student_notes
+      );
+      setIsConfirmModalOpen(false);
+      // Refresh list to show updated status
+      const classId = studentData?.student?.class_id || undefined;
+      const updatedSessions = await mahasiswaService.getClassGuidanceSessions(studentId, classId);
+      setClassSessions(updatedSessions);
+    } catch (err: any) {
+      alert('Gagal menyimpan konfirmasi: ' + (err.message || 'Terjadi kesalahan.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    setParticipations(store.getParticipants().filter((p) => p.student_id === studentId));
-    setIsConfirmModalOpen(false);
+  const academicClass = studentData?.academicClass;
+  const activeAcademicYear = studentData?.activeAcademicYear;
+  const lecturer = studentData?.advisorLecturer;
+
+  // Split topic description into list items if multiline, otherwise single text
+  const parseTopics = (text: string) => {
+    if (!text) return [];
+    return text
+      .split(/\n+/)
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
   };
 
   return (
     <div className="max-w-xl mx-auto space-y-4 sm:space-y-5 pb-6">
       {/* ========================================================= */}
-      {/* 1. HERO SECTION (SANGAT MIRIP GAMBAR REFERENSI KEDUA)     */}
+      {/* 1. HERO SECTION                                           */}
       {/* ========================================================= */}
       <div className="relative overflow-hidden rounded-[26px] bg-[#EEF5FF] border border-[#E0EDFD] p-5 sm:p-6 shadow-2xs">
         {/* Circular soft blue disc background behind 3D illustration */}
@@ -145,33 +176,53 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
       </div>
 
       {/* ========================================================= */}
-      {/* 2. CARD DETAIL BIMBINGAN (SANGAT MIRIP REFERENSI KEDUA)   */}
+      {/* 2. CARD DETAIL BIMBINGAN / LIST                           */}
       {/* ========================================================= */}
       <div className="space-y-5">
-        {participations.length === 0 ? (
-          <div className="bg-white p-8 sm:p-12 rounded-2xl border border-slate-200 text-center shadow-2xs space-y-2">
+        {isLoading ? (
+          <div className="bg-white rounded-[26px] border border-slate-100 p-6 space-y-4 animate-pulse">
+            <div className="h-6 bg-slate-200 rounded w-1/3"></div>
+            <div className="h-4 bg-slate-200 rounded w-2/3"></div>
+            <div className="h-32 bg-slate-100 rounded-2xl"></div>
+            <div className="h-10 bg-slate-200 rounded-xl"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-white p-8 rounded-2xl border border-rose-200 text-center shadow-2xs space-y-3">
+            <AlertTriangle className="w-8 h-8 text-rose-500 mx-auto stroke-[2]" />
+            <h4 className="text-sm font-bold text-slate-800">{error}</h4>
+            <button
+              type="button"
+              onClick={loadData}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Coba Lagi</span>
+            </button>
+          </div>
+        ) : classSessions.length === 0 ? (
+          <div className="bg-white p-8 sm:p-12 rounded-[26px] border border-slate-200 text-center shadow-2xs space-y-2">
             <BookOpen className="w-8 h-8 text-slate-400 mx-auto stroke-[1.8]" />
-            <h4 className="text-sm font-bold text-slate-800">Belum Ada Sesi Bimbingan</h4>
+            <h4 className="text-sm font-bold text-slate-800">Belum ada jadwal bimbingan.</h4>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Belum ada agenda bimbingan kelas yang dijadwalkan oleh Dosen PA Anda saat ini.
+              Saat ini belum ada agenda bimbingan kelas yang dijadwalkan oleh Dosen Pembimbing Akademik Anda.
             </p>
           </div>
         ) : (
-          participations.map((p) => {
-            const session = store.getClassSessions().find((cs) => cs.id === p.session_id);
-            if (!session) return null;
+          classSessions.map(({ session, participant }) => {
+            const attendanceStatus = participant?.attendance_status || 'BELUM_KONFIRMASI';
+            const topics = parseTopics(session.topic_description);
 
             return (
               <div
-                key={p.id}
+                key={session.id}
                 className="bg-white rounded-[26px] border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] p-5 sm:p-6 space-y-4 sm:space-y-5"
               >
-                {/* A. HEADER ROW (Kelas SI-5A, 24 Oktober 2024, HADIR) */}
+                {/* A. HEADER ROW (Kelas, Tanggal, HADIR) */}
                 <div className="flex items-center justify-between gap-2 pb-4 border-b border-slate-100">
                   {/* Left: Badge Kelas */}
                   <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-xs font-bold border border-blue-100/70 shadow-2xs">
                     <Users className="w-3.5 h-3.5 stroke-[2.2]" />
-                    <span>Kelas {session.assignment?.class?.name || currentStudent?.class?.name || 'SI-5A'}</span>
+                    <span>Kelas {academicClass?.name || 'Reguler'}</span>
                   </div>
 
                   {/* Center: Tanggal & Semester */}
@@ -182,24 +233,24 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                         {formatDate(session.session_date, 'dd MMMM yyyy')}
                       </p>
                       <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">
-                        {activeAcademicYear?.name ? `Semester ${activeAcademicYear.name}` : 'Semester Ganjil 2024/2025'}
+                        {activeAcademicYear?.name || 'Tahun Akademik Berjalan'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Right: Status Kehadiran HADIR */}
+                  {/* Right: Status Kehadiran */}
                   <div>
-                    {p.attendance_status === 'HADIR' ? (
+                    {attendanceStatus === 'HADIR' ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#ECFDF5] text-[#16A34A] border border-emerald-100 shadow-2xs">
                         <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.2]" />
                         HADIR
                       </span>
-                    ) : p.attendance_status === 'BELUM_KONFIRMASI' ? (
+                    ) : attendanceStatus === 'BELUM_KONFIRMASI' ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-600 stroke-[2.2]" />
                         BELUM KONFIRMASI
                       </span>
-                    ) : p.attendance_status === 'IZIN' ? (
+                    ) : attendanceStatus === 'IZIN' ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs">
                         IZIN
                       </span>
@@ -211,14 +262,11 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                   </div>
                 </div>
 
-                {/* B. JUDUL BIMBINGAN & SUBTITLE */}
+                {/* B. JUDUL BIMBINGAN */}
                 <div className="space-y-1">
                   <h2 className="text-lg sm:text-xl font-extrabold text-[#0F172A] tracking-tight leading-snug">
-                    {session.title || 'Pengarahan Awal & Tata Tertib Akademik'}
+                    {session.title}
                   </h2>
-                  <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed mt-1">
-                    Sesi awal untuk memberikan pengenalan, penyampaian tata tertib, serta motivasi dalam menjalani perkuliahan.
-                  </p>
                 </div>
 
                 {/* C. TOPIK & PEMBAHASAN */}
@@ -233,30 +281,22 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                   </div>
 
                   <div className="space-y-2.5 pt-1">
-                    <div className="flex items-center gap-3">
-                      <span className="w-5 h-5 rounded-full bg-[#E0EDFF] text-[#2563EB] font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
-                        1
-                      </span>
-                      <span className="text-xs sm:text-[13px] text-slate-700 font-medium leading-normal">
-                        a. Perkenalan
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="w-5 h-5 rounded-full bg-[#E0EDFF] text-[#2563EB] font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
-                        2
-                      </span>
-                      <span className="text-xs sm:text-[13px] text-slate-700 font-medium leading-normal">
-                        b. Penyampaian tata tertib sebagai mahasiswa baru
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="w-5 h-5 rounded-full bg-[#E0EDFF] text-[#2563EB] font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
-                        3
-                      </span>
-                      <span className="text-xs sm:text-[13px] text-slate-700 font-medium leading-normal">
-                        c. Motivasi supaya Nilai bagus dan Lulus tepat waktu
-                      </span>
-                    </div>
+                    {topics.length > 0 ? (
+                      topics.map((item, idx) => (
+                        <div key={idx} className="flex items-start gap-3">
+                          <span className="w-5 h-5 rounded-full bg-[#E0EDFF] text-[#2563EB] font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <span className="text-xs sm:text-[13px] text-slate-700 font-medium leading-normal">
+                            {item}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-slate-500 italic">
+                        {session.topic_description || 'Belum ada rincian pembahasan khusus.'}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -272,7 +312,7 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                         TEMPAT / MEDIA
                       </p>
                       <p className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug mt-1 truncate">
-                        {session.venue_or_link || 'Ruang Teater FTI / Google Meet'}
+                        {session.venue_or_link || 'Diumumkan oleh Dosen PA'}
                       </p>
                     </div>
                   </div>
@@ -287,7 +327,7 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                         WAKTU
                       </p>
                       <p className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug mt-1 truncate">
-                        {formatDate(session.session_date, 'dd MMM yyyy')} • 10.00–12.00 WIB
+                        {formatDate(session.session_date, 'dd MMM yyyy')}
                       </p>
                     </div>
                   </div>
@@ -302,7 +342,7 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                         PEMBIMBING
                       </p>
                       <p className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug mt-1 truncate">
-                        {lecturer ? getLecturerFullName(lecturer) : 'Ahmad Asep Suhendi, S.Kom., M.Kom.'}
+                        {lecturer ? getLecturerFullName(lecturer) : 'Belum terplotting'}
                       </p>
                     </div>
                   </div>
@@ -313,8 +353,8 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                   {/* Primary Button */}
                   <button
                     type="button"
-                    onClick={() => handleOpenConfirm(session.id, p.attendance_status, p.student_notes)}
-                    className="w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-colors"
+                    onClick={() => handleOpenConfirm(session.id, attendanceStatus, participant?.student_notes)}
+                    className="w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
                   >
                     <CalendarCheck className="w-4.5 h-4.5 stroke-[2]" />
                     <span>Konfirmasi Kehadiran</span>
@@ -324,8 +364,8 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                   {/* Secondary Button */}
                   <button
                     type="button"
-                    onClick={() => handleOpenNotes(session.title, p.student_notes, p.lecturer_feedback)}
-                    className="w-full h-12 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 text-[#0F172A] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-colors"
+                    onClick={() => handleOpenNotes(session.title, participant?.student_notes, participant?.lecturer_feedback)}
+                    className="w-full h-12 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 text-[#0F172A] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer"
                   >
                     <FileText className="w-4.5 h-4.5 text-slate-600 stroke-[2]" />
                     <span>Lihat Catatan Bimbingan</span>
@@ -390,8 +430,8 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
             >
               Batal
             </Button>
-            <Button type="submit" className="min-h-[44px]">
-              Simpan Konfirmasi
+            <Button type="submit" disabled={isSubmitting} className="min-h-[44px]">
+              {isSubmitting ? 'Menyimpan...' : 'Simpan Konfirmasi'}
             </Button>
           </div>
         </form>

@@ -6,8 +6,7 @@ import {
   LockKeyhole, 
   Eye, 
   EyeOff, 
-  ArrowRight,
-  Landmark
+  ArrowRight
 } from 'lucide-react';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
@@ -16,8 +15,8 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
 
   const [activeRole, setActiveRole] = useState<'mahasiswa' | 'dosen'>('mahasiswa');
-  const [identifier, setIdentifier] = useState('2210114001');
-  const [password, setPassword] = useState('password123');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,15 +34,21 @@ export const Login: React.FC = () => {
   const handleRoleChange = (role: 'mahasiswa' | 'dosen') => {
     setActiveRole(role);
     setError(null);
-    if (role === 'mahasiswa') {
-      setIdentifier('2210114001');
-    } else {
-      setIdentifier('ahmad.asep@unpam.ac.id');
-    }
+    setIdentifier('');
+    setPassword('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!identifier.trim() || !password) {
+      setError(
+        activeRole === 'mahasiswa'
+          ? 'Mohon masukkan NIM dan Password Anda.'
+          : 'Mohon masukkan Email dan Password Anda.'
+      );
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
@@ -59,12 +64,17 @@ export const Login: React.FC = () => {
           navigate('/dosen/dashboard');
         }
       }
-    } catch {
-      setError(
-        activeRole === 'mahasiswa'
-          ? 'NIM atau password yang Anda masukkan salah.'
-          : 'Email atau password yang Anda masukkan salah.'
-      );
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('Invalid login credentials') || msg.includes('Email atau password') || msg.includes('NIM atau password')) {
+        setError(
+          activeRole === 'mahasiswa'
+            ? 'NIM atau password yang Anda masukkan salah.'
+            : 'Email atau password yang Anda masukkan salah.'
+        );
+      } else {
+        setError(msg || 'Gagal masuk. Periksa koneksi internet atau kredensial Anda.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -268,33 +278,6 @@ export const Login: React.FC = () => {
                       <ArrowRight className="w-4 h-4 stroke-[2]" />
                     </>
                   )}
-                </button>
-
-                {/* Divider */}
-                <div className="relative flex items-center py-1">
-                  <div className="flex-grow border-t border-slate-200"></div>
-                  <span className="flex-shrink mx-3 text-[11px] text-slate-400 font-medium">
-                    atau
-                  </span>
-                  <div className="flex-grow border-t border-slate-200"></div>
-                </div>
-
-                {/* Alternate / Institutional Account Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (activeRole === 'mahasiswa') {
-                      setIdentifier('2210114001');
-                      setPassword('password123');
-                    } else {
-                      setIdentifier('ahmad.asep@unpam.ac.id');
-                      setPassword('password123');
-                    }
-                  }}
-                  className="w-full h-[42px] rounded-xl border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors shadow-2xs flex items-center justify-center gap-2"
-                >
-                  <Landmark className="w-4 h-4 text-slate-500" />
-                  <span>Masuk dengan Akun Institusi</span>
                 </button>
               </form>
 

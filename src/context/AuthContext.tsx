@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Profile, Lecturer, Student, UserRole } from '../types/database.types';
+import { Profile, Lecturer, Student } from '../types/database.types';
 import { authService } from '../services/auth.service';
-import { isSupabaseReady } from '../lib/supabase';
 
 interface AuthContextType {
   user: Profile | null;
@@ -12,8 +11,7 @@ interface AuthContextType {
   loginWithNIM: (nim: string, password?: string) => Promise<Profile | null>;
   login: (identifier: string, role?: 'admin' | 'dosen' | 'mahasiswa') => Promise<void>;
   logout: () => Promise<void>;
-  switchDemoRole: (role: UserRole, specificId?: string) => void;
-  isDemoMode: boolean;
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,24 +21,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [lecturerProfile, setLecturerProfile] = useState<Lecturer | undefined>(undefined);
   const [studentProfile, setStudentProfile] = useState<Student | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const isDemoMode = !isSupabaseReady;
+
+  const refreshSession = async () => {
+    try {
+      const sessionData = await authService.getCurrentUserSession();
+      setUser(sessionData.user);
+      setLecturerProfile(sessionData.lecturerProfile);
+      setStudentProfile(sessionData.studentProfile);
+    } catch (err) {
+      console.error('Auth refresh error:', err);
+    }
+  };
 
   useEffect(() => {
+    let mounted = true;
+
     const initAuth = async () => {
       setIsLoading(true);
       try {
         const sessionData = await authService.getCurrentUserSession();
-        setUser(sessionData.user);
-        setLecturerProfile(sessionData.lecturerProfile);
-        setStudentProfile(sessionData.studentProfile);
+        if (mounted) {
+          setUser(sessionData.user);
+          setLecturerProfile(sessionData.lecturerProfile);
+          setStudentProfile(sessionData.studentProfile);
+        }
       } catch (err) {
         console.error('Auth initialization error:', err);
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     initAuth();
+
+    // Subscribe to Supabase auth events
+    const { data: { subscription } } = authService.onAuthStateChange((sessionData) => {
+      if (mounted) {
+        setUser(sessionData.user);
+        setLecturerProfile(sessionData.lecturerProfile);
+        setStudentProfile(sessionData.studentProfile);
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const loginWithEmail = async (email: string, password?: string): Promise<Profile | null> => {
@@ -89,13 +118,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const switchDemoRole = (role: UserRole, specificId?: string) => {
-    const sessionData = authService.switchRole(role, specificId);
-    setUser(sessionData.user);
-    setLecturerProfile(sessionData.lecturerProfile);
-    setStudentProfile(sessionData.studentProfile);
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -107,8 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithNIM,
         login,
         logout,
-        switchDemoRole,
-        isDemoMode
+        refreshSession
       }}
     >
       {children}

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   MessagesSquare,
@@ -10,95 +10,108 @@ import {
   Calendar,
   Users,
   BookOpen,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
-import { store } from '../../../lib/store';
+import { 
+  mahasiswaService, 
+  StudentFullData, 
+  StudentClassSessionItem 
+} from '../../../services/mahasiswa.service';
+import { IndividualGuidanceRequest } from '../../../types/database.types';
 import { formatDate } from '../../../lib/utils';
+
+interface GuidanceItem {
+  id: string;
+  title: string;
+  date: string;
+  category: string;
+  type: 'kelas' | 'individu';
+  classLabel: string;
+  status: 'BELUM_KONFIRMASI' | 'TERVALIDASI' | 'SELESAI' | 'DIAJUKAN' | 'DIPROSES';
+  statusLabel: string;
+}
 
 export const MahasiswaDashboard: React.FC = () => {
   const { user } = useAuth();
   const studentId = user?.id;
 
-  // 1. Data Mahasiswa & Kelas
-  const currentStudent = useMemo(() => {
-    return store.getStudents().find((s) => s.id === studentId);
+  const [studentData, setStudentData] = useState<StudentFullData | null>(null);
+  const [classSessions, setClassSessions] = useState<StudentClassSessionItem[]>([]);
+  const [individualRequests, setIndividualRequests] = useState<IndividualGuidanceRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadDashboardData = useCallback(async () => {
+    if (!studentId) return;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // 1. Fetch student academic record & class
+      const academicData = await mahasiswaService.getStudentAcademicData(studentId);
+      setStudentData(academicData);
+
+      const classId = academicData.student?.class_id || undefined;
+
+      // 2. Fetch class sessions & individual guidance concurrently
+      const [sessionsData, requestsData] = await Promise.all([
+        mahasiswaService.getClassGuidanceSessions(studentId, classId),
+        mahasiswaService.getIndividualGuidanceRequests(studentId)
+      ]);
+
+      setClassSessions(sessionsData);
+      setIndividualRequests(requestsData);
+    } catch (err: any) {
+      console.error('Failed to load dashboard data:', err);
+      setError('Gagal memuat data bimbingan. Silakan periksa koneksi atau coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
   }, [studentId]);
 
-  const myClassId = currentStudent?.class_id;
-  const myClass = useMemo(() => {
-    if (!myClassId) return currentStudent?.class;
-    return store.getClasses().find((c) => c.id === myClassId) || currentStudent?.class;
-  }, [myClassId, currentStudent]);
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
-  // 2. Class Guidance Sessions & Student Participations
-  const allSessions = useMemo(() => store.getClassSessions(), []);
-  const myClassParticipations = useMemo(() => {
-    return store.getParticipants().filter((p) => p.student_id === studentId);
-  }, [studentId]);
-
-  // 3. Pending Actions (Perlu Tindakan)
+  // Pending Actions (Perlu Tindakan)
   const pendingClassGuidances = useMemo(() => {
-    return myClassParticipations
-      .filter((p) => p.attendance_status === 'BELUM_KONFIRMASI')
-      .map((p) => {
-        const session = allSessions.find((s) => s.id === p.session_id);
-        return {
-          participant: p,
-          session,
-        };
-      })
-      .filter((item) => item.session !== undefined);
-  }, [myClassParticipations, allSessions]);
+    return classSessions.filter(
+      (item) => item.participant?.attendance_status === 'BELUM_KONFIRMASI'
+    );
+  }, [classSessions]);
 
-  // 4. Konsultasi Individu
-  const individualRequests = useMemo(() => {
-    return store.getIndividualRequests().filter((r) => r.student_id === studentId);
-  }, [studentId]);
-
-  // 5. Merged Recent Guidance Records (Max 3 items)
-  interface GuidanceItem {
-    id: string;
-    title: string;
-    date: string;
-    category: string;
-    type: 'kelas' | 'individu';
-    classLabel: string;
-    status: 'BELUM_KONFIRMASI' | 'TERVALIDASI' | 'SELESAI' | 'DIAJUKAN' | 'DIPROSES';
-    statusLabel: string;
-  }
-
+  // Recent Guidance Records (Merged max 3 items)
   const recentGuidanceList = useMemo<GuidanceItem[]>(() => {
     const list: GuidanceItem[] = [];
+    const className = studentData?.academicClass?.name || '-';
 
     // Add Class Guidance Sessions
-    myClassParticipations.forEach((p) => {
-      const session = allSessions.find((s) => s.id === p.session_id);
-      if (session) {
-        let status: GuidanceItem['status'] = 'TERVALIDASI';
-        let statusLabel = 'Tervalidasi';
+    classSessions.forEach(({ session, participant }) => {
+      let status: GuidanceItem['status'] = 'TERVALIDASI';
+      let statusLabel = 'Tervalidasi';
 
-        if (p.attendance_status === 'BELUM_KONFIRMASI') {
-          status = 'BELUM_KONFIRMASI';
-          statusLabel = 'Belum Konfirmasi';
-        } else if (p.validation_status === 'VALID') {
-          status = 'TERVALIDASI';
-          statusLabel = 'Tervalidasi';
-        } else {
-          status = 'TERVALIDASI';
-          statusLabel = 'Menunggu Validasi';
-        }
-
-        list.push({
-          id: session.id,
-          title: session.title,
-          date: session.session_date,
-          category: 'Bimbingan Kelas',
-          type: 'kelas',
-          classLabel: myClass?.name || 'SI-5A',
-          status,
-          statusLabel,
-        });
+      if (participant?.attendance_status === 'BELUM_KONFIRMASI') {
+        status = 'BELUM_KONFIRMASI';
+        statusLabel = 'Belum Konfirmasi';
+      } else if (participant?.validation_status === 'VALID') {
+        status = 'TERVALIDASI';
+        statusLabel = 'Tervalidasi';
+      } else {
+        status = 'TERVALIDASI';
+        statusLabel = 'Menunggu Validasi';
       }
+
+      list.push({
+        id: session.id,
+        title: session.title,
+        date: session.session_date,
+        category: 'Bimbingan Kelas',
+        type: 'kelas',
+        classLabel: className,
+        status,
+        statusLabel,
+      });
     });
 
     // Add Individual Guidance Requests
@@ -123,7 +136,7 @@ export const MahasiswaDashboard: React.FC = () => {
         date: req.guidance_date || req.created_at,
         category: 'Konsultasi Individu',
         type: 'individu',
-        classLabel: myClass?.name || 'SI-5A',
+        classLabel: className,
         status,
         statusLabel,
       });
@@ -133,16 +146,68 @@ export const MahasiswaDashboard: React.FC = () => {
     list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return list.slice(0, 3);
-  }, [myClassParticipations, allSessions, individualRequests, myClass]);
+  }, [classSessions, individualRequests, studentData]);
 
-  // Dynamic Semester calculation or default
+  // Dynamic Semester calculation
   const semesterLabel = useMemo(() => {
-    if (myClass?.name) {
-      const match = myClass.name.match(/\d+/);
+    const className = studentData?.academicClass?.name;
+    if (className) {
+      const match = className.match(/\d+/);
       if (match) return `Semester ${match[0]}`;
     }
-    return 'Semester 5';
-  }, [myClass]);
+    if (studentData?.activeAcademicYear?.semester) {
+      return `Semester ${studentData.activeAcademicYear.semester}`;
+    }
+    return '-';
+  }, [studentData]);
+
+  // Loading State Skeleton
+  if (isLoading) {
+    return (
+      <div className="space-y-4 sm:space-y-6 animate-pulse">
+        {/* Skeleton Hero */}
+        <div className="rounded-2xl bg-slate-200/80 h-44 sm:h-48 w-full"></div>
+        {/* Skeleton Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+          <div className="order-2 lg:order-1 lg:col-span-7 space-y-3">
+            <div className="h-6 bg-slate-200 rounded w-1/3"></div>
+            <div className="h-48 bg-slate-200 rounded-2xl"></div>
+          </div>
+          <div className="order-1 lg:order-2 lg:col-span-5 space-y-3">
+            <div className="h-6 bg-slate-200 rounded w-1/3"></div>
+            <div className="h-36 bg-slate-200 rounded-2xl"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error State with Retry Button
+  if (error) {
+    return (
+      <div className="bg-white rounded-2xl border border-rose-200 p-6 sm:p-8 text-center space-y-4 shadow-xs">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-6 h-6 stroke-[2]" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-slate-900">Gagal Memuat Data</h3>
+          <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">{error}</p>
+        </div>
+        <button
+          type="button"
+          onClick={loadDashboardData}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Coba Lagi</span>
+        </button>
+      </div>
+    );
+  }
+
+  const studentName = user?.full_name || studentData?.student?.profile?.full_name || 'Mahasiswa';
+  const className = studentData?.academicClass?.name || 'Belum Ada Kelas';
+  const studyProgram = studentData?.academicClass?.study_program || 'Sistem Informasi';
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -179,7 +244,7 @@ export const MahasiswaDashboard: React.FC = () => {
               Selamat datang,
             </p>
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">
-              {user?.full_name || 'Ahmad Fauzi'}
+              {studentName}
             </h2>
             <p className="text-xs text-blue-200/90 italic font-normal pt-0.5">
               "Terus belajar, terus berkembang"
@@ -190,11 +255,11 @@ export const MahasiswaDashboard: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap pt-1">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-xs font-semibold text-white border border-white/20 shadow-2xs">
               <Users className="w-3.5 h-3.5 stroke-[2]" />
-              <span>{myClass?.name || 'SI-5A'}</span>
+              <span>{className}</span>
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-xs font-semibold text-white border border-white/20 shadow-2xs">
               <BookOpen className="w-3.5 h-3.5 stroke-[2]" />
-              <span>{myClass?.study_program || 'Sistem Informasi'}</span>
+              <span>{studyProgram}</span>
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-xs font-semibold text-white border border-white/20 shadow-2xs">
               <Calendar className="w-3.5 h-3.5 stroke-[2]" />
@@ -321,7 +386,7 @@ export const MahasiswaDashboard: React.FC = () => {
             <div className="space-y-3">
               {pendingClassGuidances.map(({ participant, session }) => (
                 <div
-                  key={participant.id}
+                  key={participant?.id || session.id}
                   className="bg-white rounded-2xl p-4 sm:p-5 border border-amber-200 shadow-2xs space-y-3"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -329,11 +394,11 @@ export const MahasiswaDashboard: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 stroke-[2]" />
                         <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-                          {session?.title || 'Persiapan Menghadapi UTS'}
+                          {session.title}
                         </h4>
                       </div>
                       <p className="text-[11px] sm:text-xs text-slate-600 pl-6">
-                        {session?.session_date ? formatDate(session.session_date) : '20 Jan 2027'} • Bimbingan Kelas • {myClass?.name || 'SI-5A'}
+                        {session.session_date ? formatDate(session.session_date) : '-'} • Bimbingan Kelas • {className}
                       </p>
                     </div>
 

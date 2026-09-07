@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { Link } from 'react-router-dom';
-import { store } from '../../../lib/store';
 import { 
   UserRound, 
   Mail, 
@@ -9,65 +8,115 @@ import {
   FileText, 
   MessagesSquare, 
   CheckCircle2,
-  Copy,
-  Check,
-  ExternalLink,
-  ArrowRight
+  Copy, 
+  Check, 
+  ExternalLink, 
+  ArrowRight,
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { getLecturerFullName } from '../../../lib/utils';
 import { EmptyState } from '../../../components/feedback/EmptyState';
+import { mahasiswaService, StudentFullData } from '../../../services/mahasiswa.service';
 
 export const InfoDosenPA: React.FC = () => {
   const { user } = useAuth();
   const studentId = user?.id;
+
+  const [studentData, setStudentData] = useState<StudentFullData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [copiedEmail, setCopiedEmail] = useState(false);
 
-  const currentStudent = useMemo(() => {
-    return store.getStudents().find((s) => s.id === studentId);
+  const loadData = useCallback(async () => {
+    if (!studentId) return;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await mahasiswaService.getStudentAcademicData(studentId);
+      setStudentData(data);
+    } catch (err: any) {
+      console.error('Error loading profile data:', err);
+      setError('Gagal memuat data profil. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
   }, [studentId]);
 
-  const myClassId = currentStudent?.class_id;
-  const myClass = useMemo(() => {
-    if (!myClassId) return currentStudent?.class;
-    return store.getClasses().find((c) => c.id === myClassId) || currentStudent?.class;
-  }, [myClassId, currentStudent]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  const assignment = useMemo(() => {
-    if (!myClassId) return undefined;
-    return store.getAssignments().find((a) => a.class_id === myClassId && a.is_active);
-  }, [myClassId]);
-
-  const lecturer = useMemo(() => {
-    if (assignment?.lecturer) return assignment.lecturer;
-    if (assignment?.lecturer_id) {
-      return store.getLecturers().find((l) => l.id === assignment.lecturer_id);
-    }
-    return undefined;
-  }, [assignment]);
+  const currentStudent = studentData?.student;
+  const myClass = studentData?.academicClass;
+  const lecturer = studentData?.advisorLecturer;
 
   // Initials helper
   const studentInitials = useMemo(() => {
-    if (!user?.full_name) return 'AF';
-    const parts = user.full_name.trim().split(/\s+/);
+    const name = user?.full_name || currentStudent?.profile?.full_name;
+    if (!name) return 'M';
+    const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    return user.full_name.slice(0, 2).toUpperCase();
-  }, [user]);
+    return name.slice(0, 2).toUpperCase();
+  }, [user, currentStudent]);
 
   const lecturerInitials = useMemo(() => {
-    const name = lecturer?.profile?.full_name || 'Ahmad Asep Suhendi';
+    const name = lecturer?.profile?.full_name;
+    if (!name) return 'PA';
     const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return name.slice(0, 2).toUpperCase();
   }, [lecturer]);
 
-  const emailText = lecturer?.profile?.email || 'Dosen02975@unpam.ac.id';
-  const phoneText = lecturer?.profile?.phone_number || '0851.5977.4347';
+  const emailText = lecturer?.profile?.email || '';
+  const phoneText = lecturer?.profile?.phone_number || '';
 
   const handleCopyEmail = () => {
+    if (!emailText) return;
     navigator.clipboard.writeText(emailText);
     setCopiedEmail(true);
     setTimeout(() => setCopiedEmail(false), 2000);
   };
+
+  const studentName = user?.full_name || currentStudent?.profile?.full_name || 'Mahasiswa';
+  const nim = currentStudent?.nim || '-';
+  const studyProgram = myClass?.study_program || '-';
+
+  if (isLoading) {
+    return (
+      <div className="max-w-xl mx-auto space-y-4 sm:space-y-5 pb-6 animate-pulse">
+        <div className="flex items-center justify-between gap-3 pt-1 pb-1">
+          <div className="space-y-2 w-1/2">
+            <div className="h-8 bg-slate-200 rounded"></div>
+            <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+          </div>
+          <div className="w-20 h-20 bg-slate-200 rounded-full"></div>
+        </div>
+        <div className="h-40 bg-slate-200 rounded-[24px]"></div>
+        <div className="h-64 bg-slate-200 rounded-[24px]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-xl mx-auto py-8">
+        <div className="bg-white p-8 rounded-[24px] border border-rose-200 text-center shadow-2xs space-y-3">
+          <AlertTriangle className="w-8 h-8 text-rose-500 mx-auto stroke-[2]" />
+          <h4 className="text-sm font-bold text-slate-800">{error}</h4>
+          <button
+            type="button"
+            onClick={loadData}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Coba Lagi</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto space-y-4 sm:space-y-5 pb-6">
@@ -116,7 +165,7 @@ export const InfoDosenPA: React.FC = () => {
           </span>
         </div>
 
-        {/* Body Row: Square AF Avatar + Details */}
+        {/* Body Row: Square Avatar + Details */}
         <div className="flex items-center gap-4 pt-1">
           <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-[#2563EB] flex items-center justify-center text-white font-extrabold text-xl sm:text-2xl shadow-xs flex-shrink-0">
             {studentInitials}
@@ -124,7 +173,7 @@ export const InfoDosenPA: React.FC = () => {
 
           <div className="min-w-0 flex-1 space-y-1">
             <h2 className="text-lg sm:text-xl font-extrabold text-[#0F172A] leading-snug truncate">
-              {user?.full_name || 'Ahmad Fauzi'}
+              {studentName}
             </h2>
 
             <div className="space-y-0.5 text-xs">
@@ -132,14 +181,14 @@ export const InfoDosenPA: React.FC = () => {
                 <span className="w-24 text-slate-400 font-medium">NIM</span>
                 <span className="mr-2">:</span>
                 <span className="font-semibold text-slate-700 font-mono">
-                  {currentStudent?.nim || '2210511045'}
+                  {nim}
                 </span>
               </div>
               <div className="flex items-center text-slate-500">
                 <span className="w-24 text-slate-400 font-medium">Program Studi</span>
                 <span className="mr-2">:</span>
                 <span className="font-semibold text-slate-700 truncate">
-                  {myClass?.study_program || 'Sistem Informasi'}
+                  {studyProgram}
                 </span>
               </div>
             </div>
@@ -162,9 +211,15 @@ export const InfoDosenPA: React.FC = () => {
             </span>
           </div>
 
-          <span className="inline-flex items-center px-3 py-1 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-xs font-bold border border-blue-100/60 shadow-2xs">
-            Terplotting
-          </span>
+          {lecturer ? (
+            <span className="inline-flex items-center px-3 py-1 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-xs font-bold border border-blue-100/60 shadow-2xs">
+              Terplotting
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-3 py-1 rounded-xl bg-amber-50 text-amber-700 text-xs font-bold border border-amber-200 shadow-2xs">
+              Belum terplotting
+            </span>
+          )}
         </div>
 
         {lecturer ? (
@@ -185,14 +240,14 @@ export const InfoDosenPA: React.FC = () => {
                     <span className="w-24 text-slate-400 font-medium">NIDN</span>
                     <span className="mr-2">:</span>
                     <span className="font-semibold text-slate-700 font-mono">
-                      {lecturer.nidn || '0411099202'}
+                      {lecturer.nidn || '-'}
                     </span>
                   </div>
                   <div className="flex items-center text-slate-500">
                     <span className="w-24 text-slate-400 font-medium">Program Studi</span>
                     <span className="mr-2">:</span>
                     <span className="font-semibold text-slate-700 truncate">
-                      {lecturer.department || 'Sistem Informasi'}
+                      {lecturer.department || '-'}
                     </span>
                   </div>
                 </div>
@@ -212,23 +267,25 @@ export const InfoDosenPA: React.FC = () => {
                       EMAIL RESMI
                     </p>
                     <p className="text-xs sm:text-sm font-semibold text-[#0F172A] leading-snug mt-1 truncate">
-                      {emailText}
+                      {emailText || 'Email belum tersedia'}
                     </p>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleCopyEmail}
-                  title="Salin Email"
-                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 transition-colors flex-shrink-0"
-                >
-                  {copiedEmail ? (
-                    <Check className="w-4 h-4 text-emerald-600 stroke-[2.2]" />
-                  ) : (
-                    <Copy className="w-4 h-4 stroke-[2]" />
-                  )}
-                </button>
+                {emailText && (
+                  <button
+                    type="button"
+                    onClick={handleCopyEmail}
+                    title="Salin Email"
+                    className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 transition-colors flex-shrink-0 cursor-pointer"
+                  >
+                    {copiedEmail ? (
+                      <Check className="w-4 h-4 text-emerald-600 stroke-[2.2]" />
+                    ) : (
+                      <Copy className="w-4 h-4 stroke-[2]" />
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* WhatsApp */}
@@ -242,20 +299,22 @@ export const InfoDosenPA: React.FC = () => {
                       WHATSAPP
                     </p>
                     <p className="text-xs sm:text-sm font-semibold text-[#0F172A] leading-snug mt-1 truncate">
-                      {phoneText}
+                      {phoneText || 'Nomor telepon belum tersedia'}
                     </p>
                   </div>
                 </div>
 
-                <a
-                  href={`https://wa.me/62${phoneText.replace(/[^0-9]/g, '').replace(/^0/, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Hubungi via WhatsApp"
-                  className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-slate-100/80 transition-colors flex-shrink-0"
-                >
-                  <ExternalLink className="w-4 h-4 stroke-[2]" />
-                </a>
+                {phoneText && (
+                  <a
+                    href={`https://wa.me/62${phoneText.replace(/[^0-9]/g, '').replace(/^0/, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Hubungi via WhatsApp"
+                    className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-slate-100/80 transition-colors flex-shrink-0"
+                  >
+                    <ExternalLink className="w-4 h-4 stroke-[2]" />
+                  </a>
+                )}
               </div>
             </div>
 
@@ -264,7 +323,7 @@ export const InfoDosenPA: React.FC = () => {
               {/* Primary: Ajukan Konsultasi */}
               <Link
                 to="/mahasiswa/konsultasi"
-                className="w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-colors"
+                className="w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
               >
                 <MessagesSquare className="w-4.5 h-4.5 stroke-[2]" />
                 <span>Ajukan Konsultasi</span>
@@ -272,20 +331,22 @@ export const InfoDosenPA: React.FC = () => {
               </Link>
 
               {/* Secondary: Form Bimbingan */}
-              <Link
-                to={`/report/formulir?studentId=${studentId || 'usr-mhs-1'}`}
-                className="w-full h-12 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 text-[#0F172A] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-colors"
-              >
-                <FileText className="w-4.5 h-4.5 text-slate-600 stroke-[2]" />
-                <span>Form Bimbingan</span>
-                <ArrowRight className="w-4 h-4 text-slate-400 stroke-[2]" />
-              </Link>
+              {studentId && (
+                <Link
+                  to={`/report/formulir?studentId=${studentId}`}
+                  className="w-full h-12 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 text-[#0F172A] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <FileText className="w-4.5 h-4.5 text-slate-600 stroke-[2]" />
+                  <span>Form Bimbingan</span>
+                  <ArrowRight className="w-4 h-4 text-slate-400 stroke-[2]" />
+                </Link>
+              )}
             </div>
           </div>
         ) : (
           <EmptyState
-            title="Dosen Pembimbing Akademik"
-            description="Anda belum memiliki Dosen Pembimbing Akademik yang terplotting."
+            title="Dosen Pembimbing Akademik Belum Terplotting"
+            description="Anda belum memiliki Dosen Pembimbing Akademik yang terplotting. Silakan hubungi bagian tata usaha program studi Anda."
           />
         )}
       </div>

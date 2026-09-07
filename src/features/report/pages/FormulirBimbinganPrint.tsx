@@ -80,11 +80,11 @@ export const FormulirBimbinganPrint: React.FC = () => {
     );
   }
 
-  const lecturerName = lecturer ? getLecturerFullName(lecturer) : 'AHMAD ASEP SUHENDI, S.KOM, M.KOM';
-  const lecturerNidn = lecturer?.nidn || '0411099202';
-  const lecturerPhone = lecturer?.profile?.phone_number || '0851.5977.4347';
-  const lecturerEmail = lecturer?.profile?.email || 'Dosen02975@unpam.ac.id';
-  const lecturerSignature = lecturer?.signature_url || '/assets/ahmadasepsuhendi-ttd.png';
+  const lecturerName = lecturer ? getLecturerFullName(lecturer) : '-';
+  const lecturerNidn = lecturer?.nidn || '-';
+  const lecturerPhone = lecturer?.profile?.phone_number || '-';
+  const lecturerEmail = lecturer?.profile?.email || '-';
+  const lecturerSignature = lecturer?.signature_url || null;
 
   return (
     <div className="min-h-screen bg-slate-200/80 p-4 sm:p-8 flex flex-col items-center print:p-0 print:bg-white">
