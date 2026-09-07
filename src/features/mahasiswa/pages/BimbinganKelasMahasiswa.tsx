@@ -101,73 +101,51 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
     setIsConfirmModalOpen(false);
   };
 
-  // Helper to format topic description points cleanly
-  const formatTopicPoints = (text?: string | null) => {
-    if (!text) {
-      return [
-        'Perkenalan',
-        'Penyampaian tata tertib sebagai mahasiswa baru',
-        'Motivasi supaya Nilai bagus dan Lulus tepat waktu',
-      ];
-    }
-    if (text.includes('\n')) {
-      const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-      if (lines.length > 0) return lines;
-    }
-    const regex = /(?:^|\s+)([a-zA-Z0-9]+[\.\)])\s+/;
-    if (regex.test(text)) {
-      const parts = text.split(/(?:^|\s+)(?=[a-zA-Z0-9]+[\.\)]\s+)/).map((s) => s.trim()).filter(Boolean);
-      if (parts.length > 1) return parts;
-    }
-    return [text];
-  };
-
   return (
-    <div className="max-w-3xl mx-auto space-y-5 pb-6">
+    <div className="max-w-xl mx-auto space-y-4 sm:space-y-5 pb-6">
       {/* ========================================================= */}
-      {/* 1. HERO / PAGE HEADER (Soft Blue Gradient & 3D Illustration) */}
+      {/* 1. HERO SECTION (SANGAT MIRIP GAMBAR REFERENSI KEDUA)     */}
       {/* ========================================================= */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50/90 via-indigo-50/50 to-blue-50/20 border border-blue-100/70 p-5 sm:p-6 shadow-2xs">
-        {/* Soft Circular Decorative Background Glow */}
-        <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-44 h-44 rounded-full bg-blue-200/40 blur-2xl pointer-events-none" />
-        <div className="absolute right-20 -top-10 w-28 h-28 rounded-full bg-indigo-200/30 blur-xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-[26px] bg-[#EEF5FF] border border-[#E0EDFD] p-5 sm:p-6 shadow-2xs">
+        {/* Circular soft blue disc background behind 3D illustration */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-[#DCEAFB] pointer-events-none" />
 
         {/* Back Button (Circle top left) */}
-        <div className="relative z-10 mb-3 sm:mb-4">
+        <div className="relative z-10 mb-2.5">
           <button
             type="button"
             onClick={() => navigate('/mahasiswa/dashboard')}
-            className="w-9 h-9 rounded-full bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-10 h-10 rounded-full bg-white shadow-2xs border border-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             title="Kembali ke Beranda"
           >
-            <ArrowLeft className="w-4 h-4 stroke-[2]" />
+            <ArrowLeft className="w-5 h-5 stroke-[2]" />
           </button>
         </div>
 
-        {/* Header Content & 3D Illustration */}
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div className="space-y-1.5 min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
+        {/* 2-Column: Title/Subtitle (Left) + 3D Illustration (Right) */}
+        <div className="relative z-10 flex items-center justify-between gap-2">
+          <div className="space-y-1 min-w-0 flex-1 pr-2">
+            <h1 className="text-2xl sm:text-[26px] font-extrabold text-[#0F172A] tracking-tight leading-tight">
               Bimbingan Kelas
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-sm sm:max-w-md leading-relaxed">
+            <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed max-w-[210px] sm:max-w-xs">
               Konfirmasi kehadiran dan sampaikan catatan atau pertanyaan untuk setiap sesi bimbingan.
             </p>
           </div>
 
-          {/* 3D Toga & Book Illustration */}
-          <div className="flex-shrink-0 relative hidden xs:block">
+          {/* 3D Toga & Book Asset */}
+          <div className="flex-shrink-0 relative">
             <img
               src="/assets/buku-toga.png"
               alt="Bimbingan Kelas"
-              className="w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-sm pointer-events-none select-none"
+              className="w-24 h-24 sm:w-28 sm:h-28 object-contain pointer-events-none select-none drop-shadow-xs"
             />
           </div>
         </div>
       </div>
 
       {/* ========================================================= */}
-      {/* 2. CARD DETAIL BIMBINGAN LIST                             */}
+      {/* 2. CARD DETAIL BIMBINGAN (SANGAT MIRIP REFERENSI KEDUA)   */}
       {/* ========================================================= */}
       <div className="space-y-5">
         {participations.length === 0 ? (
@@ -183,57 +161,49 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
             const session = store.getClassSessions().find((cs) => cs.id === p.session_id);
             if (!session) return null;
 
-            const isPending = p.attendance_status === 'BELUM_KONFIRMASI';
-            const topicPoints = formatTopicPoints(session.topic_description);
-
             return (
               <div
                 key={p.id}
-                className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-6 space-y-4 sm:space-y-5"
+                className="bg-white rounded-[26px] border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] p-5 sm:p-6 space-y-4 sm:space-y-5"
               >
-                {/* 3. BAGIAN ATAS CARD: BADGE KELAS, TANGGAL & SEMESTER, STATUS KEHADIRAN */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-slate-100">
-                  <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-                    {/* Badge Kelas */}
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 font-bold text-xs border border-blue-100/80 shadow-2xs">
-                      <Users className="w-3.5 h-3.5 stroke-[2]" />
-                      <span>Kelas {session.assignment?.class?.name || currentStudent?.class?.name || 'SI-5A'}</span>
-                    </div>
+                {/* A. HEADER ROW (Kelas SI-5A, 24 Oktober 2024, HADIR) */}
+                <div className="flex items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                  {/* Left: Badge Kelas */}
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-xs font-bold border border-blue-100/70 shadow-2xs">
+                    <Users className="w-3.5 h-3.5 stroke-[2.2]" />
+                    <span>Kelas {session.assignment?.class?.name || currentStudent?.class?.name || 'SI-5A'}</span>
+                  </div>
 
-                    {/* Tanggal & Informasi Semester */}
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                      <div>
-                        <p className="text-xs font-bold text-slate-900 leading-tight">
-                          {formatDate(session.session_date, 'dd MMMM yyyy')}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">
-                          {activeAcademicYear?.name ? `Semester ${activeAcademicYear.name}` : 'Semester Ganjil 2024/2025'}
-                        </p>
-                      </div>
+                  {/* Center: Tanggal & Semester */}
+                  <div className="flex items-center gap-2 text-left">
+                    <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0 stroke-[1.8]" />
+                    <div>
+                      <p className="text-xs font-bold text-[#0F172A] leading-tight">
+                        {formatDate(session.session_date, 'dd MMMM yyyy')}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">
+                        {activeAcademicYear?.name ? `Semester ${activeAcademicYear.name}` : 'Semester Ganjil 2024/2025'}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Status Kehadiran Badge */}
+                  {/* Right: Status Kehadiran HADIR */}
                   <div>
-                    {p.attendance_status === 'HADIR' && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+                    {p.attendance_status === 'HADIR' ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#ECFDF5] text-[#16A34A] border border-emerald-100 shadow-2xs">
                         <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.2]" />
                         HADIR
                       </span>
-                    )}
-                    {p.attendance_status === 'BELUM_KONFIRMASI' && (
+                    ) : p.attendance_status === 'BELUM_KONFIRMASI' ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-600 stroke-[2.2]" />
                         BELUM KONFIRMASI
                       </span>
-                    )}
-                    {p.attendance_status === 'IZIN' && (
+                    ) : p.attendance_status === 'IZIN' ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs">
                         IZIN
                       </span>
-                    )}
-                    {p.attendance_status === 'TIDAK_HADIR' && (
+                    ) : (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
                         TIDAK HADIR
                       </span>
@@ -241,100 +211,113 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 4. JUDUL BIMBINGAN & DESKRIPSI SINGKAT */}
+                {/* B. JUDUL BIMBINGAN & SUBTITLE */}
                 <div className="space-y-1">
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug">
+                  <h2 className="text-lg sm:text-xl font-extrabold text-[#0F172A] tracking-tight leading-snug">
                     {session.title || 'Pengarahan Awal & Tata Tertib Akademik'}
                   </h2>
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                  <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed mt-1">
                     Sesi awal untuk memberikan pengenalan, penyampaian tata tertib, serta motivasi dalam menjalani perkuliahan.
                   </p>
                 </div>
 
-                {/* 5. TOPIK & PEMBAHASAN (SECTION NUMBERED LIST) */}
+                {/* C. TOPIK & PEMBAHASAN */}
                 <div className="bg-[#F8FAFC] rounded-2xl p-4 sm:p-5 border border-slate-100/90 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600 stroke-[2]" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Topik & Pembahasan
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2563EB] border border-blue-100/80 flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-4 h-4 stroke-[2]" />
+                    </div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                      TOPIK & PEMBAHASAN
                     </h3>
                   </div>
 
-                  <div className="space-y-2.5 pt-0.5">
-                    {topicPoints.map((point, index) => {
-                      const cleanPoint = point.replace(/^[a-zA-Z0-9]+[\.\)]\s*/, '');
-                      return (
-                        <div key={index} className="flex items-start gap-3">
-                          <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
-                            {String(index + 1).padStart(2, '0')}
-                          </span>
-                          <span className="text-xs text-slate-700 leading-relaxed pt-0.5">
-                            {cleanPoint}
-                          </span>
-                        </div>
-                      );
-                    })}
+                  <div className="space-y-2.5 pt-1">
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-full bg-[#E0EDFF] text-[#2563EB] font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        1
+                      </span>
+                      <span className="text-xs sm:text-[13px] text-slate-700 font-medium leading-normal">
+                        a. Perkenalan
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-full bg-[#E0EDFF] text-[#2563EB] font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        2
+                      </span>
+                      <span className="text-xs sm:text-[13px] text-slate-700 font-medium leading-normal">
+                        b. Penyampaian tata tertib sebagai mahasiswa baru
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-full bg-[#E0EDFF] text-[#2563EB] font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        3
+                      </span>
+                      <span className="text-xs sm:text-[13px] text-slate-700 font-medium leading-normal">
+                        c. Motivasi supaya Nilai bagus dan Lulus tepat waktu
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* 6. INFORMASI BIMBINGAN (3 INFORMATION ROWS) */}
+                {/* D. INFORMASI DETAIL (3 Information Cards) */}
                 <div className="space-y-2.5">
-                  {/* Tempat / Media */}
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-100/90 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 border border-blue-100/60 flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-4.5 h-4.5 stroke-[1.8]" />
+                  {/* 1. TEMPAT / MEDIA */}
+                  <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-100/90 flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-blue-100/60 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-4.5 h-4.5 stroke-[2]" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
-                        Tempat / Media
+                        TEMPAT / MEDIA
                       </p>
-                      <p className="text-xs sm:text-sm font-semibold text-slate-800 leading-snug mt-1 truncate">
+                      <p className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug mt-1 truncate">
                         {session.venue_or_link || 'Ruang Teater FTI / Google Meet'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Waktu */}
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-100/90 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 border border-blue-100/60 flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-4.5 h-4.5 stroke-[1.8]" />
+                  {/* 2. WAKTU */}
+                  <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-100/90 flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-blue-100/60 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-4.5 h-4.5 stroke-[2]" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
-                        Waktu
+                        WAKTU
                       </p>
-                      <p className="text-xs sm:text-sm font-semibold text-slate-800 leading-snug mt-1 truncate">
+                      <p className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug mt-1 truncate">
                         {formatDate(session.session_date, 'dd MMM yyyy')} • 10.00–12.00 WIB
                       </p>
                     </div>
                   </div>
 
-                  {/* Pembimbing */}
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-100/90 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 border border-blue-100/60 flex items-center justify-center flex-shrink-0">
-                      <UserRound className="w-4.5 h-4.5 stroke-[1.8]" />
+                  {/* 3. PEMBIMBING */}
+                  <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-100/90 flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-blue-100/60 flex items-center justify-center flex-shrink-0">
+                      <UserRound className="w-4.5 h-4.5 stroke-[2]" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
-                        Pembimbing
+                        PEMBIMBING
                       </p>
-                      <p className="text-xs sm:text-sm font-semibold text-slate-800 leading-snug mt-1 truncate">
+                      <p className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug mt-1 truncate">
                         {lecturer ? getLecturerFullName(lecturer) : 'Ahmad Asep Suhendi, S.Kom., M.Kom.'}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* 7. ACTION BUTTONS (PRIMARY & SECONDARY) */}
+                {/* E. ACTION BUTTONS */}
                 <div className="pt-2 space-y-2.5">
                   {/* Primary Button */}
                   <button
                     type="button"
                     onClick={() => handleOpenConfirm(session.id, p.attendance_status, p.student_notes)}
-                    className="w-full h-11 sm:h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-colors"
+                    className="w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-colors"
                   >
-                    <CalendarCheck className="w-4 h-4 stroke-[2]" />
-                    <span>{isPending ? 'Konfirmasi Kehadiran' : 'Ubah Konfirmasi Kehadiran'}</span>
+                    <CalendarCheck className="w-4.5 h-4.5 stroke-[2]" />
+                    <span>Konfirmasi Kehadiran</span>
                     <ArrowRight className="w-4 h-4 stroke-[2]" />
                   </button>
 
@@ -342,9 +325,9 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleOpenNotes(session.title, p.student_notes, p.lecturer_feedback)}
-                    className="w-full h-11 sm:h-12 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200/90 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-colors"
+                    className="w-full h-12 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 text-[#0F172A] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-colors"
                   >
-                    <FileText className="w-4 h-4 text-slate-500 stroke-[2]" />
+                    <FileText className="w-4.5 h-4.5 text-slate-600 stroke-[2]" />
                     <span>Lihat Catatan Bimbingan</span>
                     <ArrowRight className="w-4 h-4 text-slate-400 stroke-[2]" />
                   </button>

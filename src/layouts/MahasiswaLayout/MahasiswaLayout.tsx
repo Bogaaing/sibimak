@@ -10,7 +10,8 @@ import {
   ChevronDown,
   UserCheck,
   ShieldCheck,
-  GraduationCap
+  GraduationCap,
+  BookOpen
 } from 'lucide-react';
 import { store } from '../../lib/store';
 import { useAuth } from '../../hooks/useAuth';
@@ -212,16 +213,16 @@ export const MahasiswaLayout: React.FC = () => {
       {/* 3. FIXED BOTTOM NAVIGATION BAR WITH SAFE AREA */}
       <nav
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-        className="no-print fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E2E8F0] shadow-[0_-2px_12px_rgba(0,0,0,0.04)] px-3 py-1.5 flex items-center justify-around h-16"
+        className="no-print fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E2E8F0] shadow-[0_-2px_12px_rgba(0,0,0,0.04)] px-4 py-1.5 flex items-center justify-around h-16"
       >
         {/* Tab 1: Beranda */}
         <NavLink
           to="/mahasiswa/dashboard"
           end
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 flex-1 py-1 px-2 rounded-xl transition-all select-none min-h-[44px] ${
+            `flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl transition-all select-none min-h-[44px] ${
               isActive
-                ? 'text-[#2563EB] font-bold bg-blue-50/80'
+                ? 'text-[#2563EB] font-bold bg-[#EFF6FF]'
                 : 'text-[#94A3B8] hover:text-slate-600 font-medium'
             }`
           }
@@ -234,14 +235,14 @@ export const MahasiswaLayout: React.FC = () => {
         <NavLink
           to="/mahasiswa/bimbingan"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 flex-1 py-1 px-2 rounded-xl transition-all select-none min-h-[44px] ${
+            `flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl transition-all select-none min-h-[44px] ${
               isActive
-                ? 'text-[#2563EB] font-bold bg-blue-50/80'
+                ? 'text-[#2563EB] font-bold bg-[#EFF6FF]'
                 : 'text-[#94A3B8] hover:text-slate-600 font-medium'
             }`
           }
         >
-          <BookOpenCheck className="w-5 h-5 stroke-[1.8]" />
+          <BookOpen className="w-5 h-5 stroke-[1.8]" />
           <span className="text-[11px] leading-tight">Bimbingan</span>
         </NavLink>
 
@@ -249,9 +250,9 @@ export const MahasiswaLayout: React.FC = () => {
         <NavLink
           to="/mahasiswa/konsultasi"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 flex-1 py-1 px-2 rounded-xl transition-all select-none min-h-[44px] ${
+            `flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl transition-all select-none min-h-[44px] ${
               isActive
-                ? 'text-[#2563EB] font-bold bg-blue-50/80'
+                ? 'text-[#2563EB] font-bold bg-[#EFF6FF]'
                 : 'text-[#94A3B8] hover:text-slate-600 font-medium'
             }`
           }
@@ -264,9 +265,9 @@ export const MahasiswaLayout: React.FC = () => {
         <NavLink
           to="/mahasiswa/profil"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 flex-1 py-1 px-2 rounded-xl transition-all select-none min-h-[44px] ${
+            `flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl transition-all select-none min-h-[44px] ${
               isActive
-                ? 'text-[#2563EB] font-bold bg-blue-50/80'
+                ? 'text-[#2563EB] font-bold bg-[#EFF6FF]'
                 : 'text-[#94A3B8] hover:text-slate-600 font-medium'
             }`
           }
