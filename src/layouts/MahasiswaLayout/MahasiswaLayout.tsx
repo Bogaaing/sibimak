@@ -204,7 +204,7 @@ export const MahasiswaLayout: React.FC = () => {
 
       {/* 2. MAIN CONTENT AREA (Clean Content Offset & Bottom Safe Area) */}
       <main
-        style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}
         className="flex-1 w-full max-w-6xl mx-auto px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8"
       >
         <Outlet />
@@ -213,67 +213,91 @@ export const MahasiswaLayout: React.FC = () => {
       {/* 3. FIXED BOTTOM NAVIGATION BAR WITH SAFE AREA */}
       <nav
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-        className="no-print fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E2E8F0] shadow-[0_-2px_12px_rgba(0,0,0,0.04)] px-4 py-1.5 flex items-center justify-around h-16"
+        className="no-print fixed bottom-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-t border-[#E2E8F0] shadow-[0_-4px_16px_rgba(0,0,0,0.04)] px-3 sm:px-6 flex items-center justify-around h-[80px] select-none"
       >
         {/* Tab 1: Beranda */}
         <NavLink
           to="/mahasiswa/dashboard"
           end
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl transition-all select-none min-h-[44px] ${
+            `flex-1 max-w-[96px] flex flex-col items-center justify-center py-2 px-2.5 rounded-2xl min-h-[50px] transition-all duration-150 active:scale-95 ${
               isActive
-                ? 'text-[#2563EB] font-bold bg-[#EFF6FF]'
-                : 'text-[#94A3B8] hover:text-slate-600 font-medium'
+                ? 'bg-[#EFF6FF] text-[#2563EB]'
+                : 'text-[#94A3B8] hover:text-slate-600 bg-transparent'
             }`
           }
         >
-          <House className="w-5 h-5 stroke-[1.8]" />
-          <span className="text-[11px] leading-tight">Beranda</span>
+          {({ isActive }) => (
+            <>
+              <House className={`w-6 h-6 ${isActive ? 'stroke-[2]' : 'stroke-[1.8]'}`} />
+              <span className={`text-[13px] leading-tight mt-1 ${isActive ? 'font-bold' : 'font-medium'}`}>
+                Beranda
+              </span>
+            </>
+          )}
         </NavLink>
 
         {/* Tab 2: Bimbingan */}
         <NavLink
           to="/mahasiswa/bimbingan"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl transition-all select-none min-h-[44px] ${
+            `flex-1 max-w-[96px] flex flex-col items-center justify-center py-2 px-2.5 rounded-2xl min-h-[50px] transition-all duration-150 active:scale-95 ${
               isActive
-                ? 'text-[#2563EB] font-bold bg-[#EFF6FF]'
-                : 'text-[#94A3B8] hover:text-slate-600 font-medium'
+                ? 'bg-[#EFF6FF] text-[#2563EB]'
+                : 'text-[#94A3B8] hover:text-slate-600 bg-transparent'
             }`
           }
         >
-          <BookOpen className="w-5 h-5 stroke-[1.8]" />
-          <span className="text-[11px] leading-tight">Bimbingan</span>
+          {({ isActive }) => (
+            <>
+              <BookOpen className={`w-6 h-6 ${isActive ? 'stroke-[2]' : 'stroke-[1.8]'}`} />
+              <span className={`text-[13px] leading-tight mt-1 ${isActive ? 'font-bold' : 'font-medium'}`}>
+                Bimbingan
+              </span>
+            </>
+          )}
         </NavLink>
 
         {/* Tab 3: Konsultasi */}
         <NavLink
           to="/mahasiswa/konsultasi"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl transition-all select-none min-h-[44px] ${
+            `flex-1 max-w-[96px] flex flex-col items-center justify-center py-2 px-2.5 rounded-2xl min-h-[50px] transition-all duration-150 active:scale-95 ${
               isActive
-                ? 'text-[#2563EB] font-bold bg-[#EFF6FF]'
-                : 'text-[#94A3B8] hover:text-slate-600 font-medium'
+                ? 'bg-[#EFF6FF] text-[#2563EB]'
+                : 'text-[#94A3B8] hover:text-slate-600 bg-transparent'
             }`
           }
         >
-          <MessagesSquare className="w-5 h-5 stroke-[1.8]" />
-          <span className="text-[11px] leading-tight">Konsultasi</span>
+          {({ isActive }) => (
+            <>
+              <MessagesSquare className={`w-6 h-6 ${isActive ? 'stroke-[2]' : 'stroke-[1.8]'}`} />
+              <span className={`text-[13px] leading-tight mt-1 ${isActive ? 'font-bold' : 'font-medium'}`}>
+                Konsultasi
+              </span>
+            </>
+          )}
         </NavLink>
 
         {/* Tab 4: Profil */}
         <NavLink
           to="/mahasiswa/profil"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl transition-all select-none min-h-[44px] ${
+            `flex-1 max-w-[96px] flex flex-col items-center justify-center py-2 px-2.5 rounded-2xl min-h-[50px] transition-all duration-150 active:scale-95 ${
               isActive
-                ? 'text-[#2563EB] font-bold bg-[#EFF6FF]'
-                : 'text-[#94A3B8] hover:text-slate-600 font-medium'
+                ? 'bg-[#EFF6FF] text-[#2563EB]'
+                : 'text-[#94A3B8] hover:text-slate-600 bg-transparent'
             }`
           }
         >
-          <UserRound className="w-5 h-5 stroke-[1.8]" />
-          <span className="text-[11px] leading-tight">Profil</span>
+          {({ isActive }) => (
+            <>
+              <UserRound className={`w-6 h-6 ${isActive ? 'stroke-[2]' : 'stroke-[1.8]'}`} />
+              <span className={`text-[13px] leading-tight mt-1 ${isActive ? 'font-bold' : 'font-medium'}`}>
+                Profil
+              </span>
+            </>
+          )}
         </NavLink>
       </nav>
 
