@@ -18,17 +18,12 @@ import {
   ShieldCheck,
   User
 } from 'lucide-react';
-import { store } from '../../lib/store';
 
 export const Sidebar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, lecturerProfile, logout } = useAuth();
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-  const lecturerProfile = store.getLecturers().find(l => l.id === user?.id);
-  const pendingConsultations = store.getIndividualRequests().filter(
-    r => r.lecturer_id === user?.id && (r.status === 'DIAJUKAN' || r.status === 'DIPROSES')
-  ).length;
+  const pendingConsultations = 0;
 
   const handleLogout = () => {
     logout();

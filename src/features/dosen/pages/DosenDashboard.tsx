@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import { store } from '../../../lib/store';
+import { dosenService } from '../../../services/dosen.service';
 import { Link } from 'react-router-dom';
 import { 
   School, 
@@ -9,42 +9,89 @@ import {
   ClipboardCheck, 
   MessagesSquare, 
   MoreVertical, 
-  Check, 
-  AlertTriangle,
   ChevronRight,
-  Eye
+  Eye,
+  AlertTriangle
 } from 'lucide-react';
+import { formatDate } from '../../../lib/utils';
+import { 
+  ClassAdvisorAssignment, 
+  Student, 
+  ClassGuidanceSession, 
+  ClassGuidanceParticipant, 
+  IndividualGuidanceRequest 
+} from '../../../types/database.types';
 
 export const DosenDashboard: React.FC = () => {
-  const { user } = useAuth();
-  const lecturerId = user?.id;
+  const { user, lecturerProfile } = useAuth();
+  const lecturerId = lecturerProfile?.id || user?.id;
+  const lecturerEmail = user?.email;
 
-  const assignments = store.getAssignments().filter((a) => a.lecturer_id === lecturerId);
-  const assignmentIds = assignments.map((a) => a.id);
+  const [assignments, setAssignments] = useState<ClassAdvisorAssignment[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [classSessions, setClassSessions] = useState<ClassGuidanceSession[]>([]);
+  const [participants, setParticipants] = useState<ClassGuidanceParticipant[]>([]);
+  const [individualRequests, setIndividualRequests] = useState<IndividualGuidanceRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const students = store.getStudents().filter((s) =>
-    assignments.some((a) => a.class_id === s.class_id)
-  );
+  useEffect(() => {
+    let isMounted = true;
 
-  const classSessions = store.getClassSessions().filter((cs) =>
-    assignmentIds.includes(cs.assignment_id)
-  );
-  const sessionIds = classSessions.map((s) => s.id);
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        // 1. Load assignments for this lecturer
+        const asgs = await dosenService.getAssignments(lecturerId, lecturerEmail);
+        if (!isMounted) return;
+        setAssignments(asgs);
 
-  const participants = store.getParticipants().filter((p) =>
-    sessionIds.includes(p.session_id)
-  );
+        const classIds = asgs.map((a) => a.class_id).filter(Boolean);
+        const assignmentIds = asgs.map((a) => a.id);
 
-  const individualRequests = store.getIndividualRequests().filter(
-    (r) => r.lecturer_id === lecturerId
-  );
+        // 2. Fetch students, sessions, and individual requests in parallel
+        const [stds, sessions, indReqs] = await Promise.all([
+          dosenService.getStudentsByClassIds(classIds),
+          dosenService.getClassSessions(assignmentIds),
+          dosenService.getIndividualRequests(lecturerId, lecturerEmail)
+        ]);
+
+        if (!isMounted) return;
+        setStudents(stds);
+        setClassSessions(sessions);
+        setIndividualRequests(indReqs);
+
+        // 3. Fetch participants for all sessions
+        const sessionIds = sessions.map((s) => s.id);
+        if (sessionIds.length > 0) {
+          const parts = await dosenService.getParticipants(sessionIds);
+          if (isMounted) setParticipants(parts);
+        } else {
+          if (isMounted) setParticipants([]);
+        }
+      } catch (err) {
+        console.error('Error loading Dosen dashboard data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [lecturerId, lecturerEmail]);
 
   // Metrics
   const totalClasses = assignments.length;
   const totalStudents = students.length;
   const totalClassSessions = classSessions.length;
   const totalIndividual = individualRequests.length;
-  
+
+  const classNamesText = assignments.length > 0
+    ? assignments.map((a) => a.class?.name).filter(Boolean).join(', ')
+    : 'Belum ada kelas';
+
   // Pending validations: HADIR and PENDING
   const pendingValidations = participants.filter(
     (p) => p.attendance_status === 'HADIR' && p.validation_status === 'PENDING'
@@ -54,7 +101,7 @@ export const DosenDashboard: React.FC = () => {
     (r) => r.status === 'DIAJUKAN' || r.status === 'DIPROSES'
   );
 
-  // Attendance metrics breakdown for Donut Chart
+  // Attendance breakdown
   const hadirCount = participants.filter((p) => p.attendance_status === 'HADIR').length;
   const belumKonfirmasiCount = participants.filter((p) => p.attendance_status === 'BELUM_KONFIRMASI').length;
   const izinCount = participants.filter((p) => p.attendance_status === 'IZIN').length;
@@ -63,6 +110,38 @@ export const DosenDashboard: React.FC = () => {
   const totalCalculated = hadirCount + belumKonfirmasiCount + izinCount + tidakHadirCount;
   const hadirPercent = totalCalculated > 0 ? ((hadirCount / totalCalculated) * 100).toFixed(1) : '0';
   const belumPercent = totalCalculated > 0 ? ((belumKonfirmasiCount / totalCalculated) * 100).toFixed(1) : '0';
+  const izinPercent = totalCalculated > 0 ? ((izinCount / totalCalculated) * 100).toFixed(1) : '0';
+  const tidakHadirPercent = totalCalculated > 0 ? ((tidakHadirCount / totalCalculated) * 100).toFixed(1) : '0';
+
+  // Calculations for this month
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const sessionsThisMonth = classSessions.filter((cs) => {
+    const d = new Date(cs.session_date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).length;
+
+  const indThisMonth = individualRequests.filter((ir) => {
+    const d = new Date(ir.guidance_date || ir.created_at);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).length;
+
+  // Donut SVG offsets
+  const hadirStroke = totalCalculated > 0 ? ((hadirCount / totalCalculated) * 100) : 0;
+  const belumStroke = totalCalculated > 0 ? ((belumKonfirmasiCount / totalCalculated) * 100) : 0;
+
+  if (isLoading) {
+    return (
+      <div className="p-6 sm:p-8 max-w-[1400px] mx-auto min-h-[400px] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold text-slate-500">Memuat data dashboard dosen...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -77,8 +156,8 @@ export const DosenDashboard: React.FC = () => {
             <span className="text-2xl font-extrabold text-slate-900 block leading-tight">
               {totalClasses}
             </span>
-            <span className="text-xs font-semibold text-blue-700 block">
-              SI-5A, SI-5B
+            <span className="text-xs font-semibold text-blue-700 block truncate max-w-[170px]" title={classNamesText}>
+              {classNamesText}
             </span>
           </div>
           <div className="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
@@ -150,7 +229,7 @@ export const DosenDashboard: React.FC = () => {
               {totalIndividual}
             </span>
             <span className="text-xs font-semibold text-blue-700 block">
-              Perlu respon
+              {pendingConsultations.length > 0 ? `${pendingConsultations.length} perlu respon` : 'Terkonfirmasi'}
             </span>
           </div>
           <div className="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
@@ -159,7 +238,7 @@ export const DosenDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. MIDDLE 3-COLUMN SECTION (Perlu Tindakan, Ringkasan Kehadiran, Bimbingan Bulan Ini) */}
+      {/* 2. MIDDLE 3-COLUMN SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Card 1: PERLU TINDAKAN */}
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-5 flex flex-col justify-between">
@@ -282,26 +361,30 @@ export const DosenDashboard: React.FC = () => {
                     stroke="#f1f5f9"
                     strokeWidth="5"
                   />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="14"
-                    fill="transparent"
-                    stroke="#16a34a"
-                    strokeWidth="5"
-                    strokeDasharray="58.6 100"
-                    strokeDashoffset="0"
-                  />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="14"
-                    fill="transparent"
-                    stroke="#2563eb"
-                    strokeWidth="5"
-                    strokeDasharray="29.3 100"
-                    strokeDashoffset="-58.6"
-                  />
+                  {totalCalculated > 0 && (
+                    <>
+                      <circle
+                        cx="18"
+                        cy="18"
+                        r="14"
+                        fill="transparent"
+                        stroke="#16a34a"
+                        strokeWidth="5"
+                        strokeDasharray={`${hadirStroke} 100`}
+                        strokeDashoffset="0"
+                      />
+                      <circle
+                        cx="18"
+                        cy="18"
+                        r="14"
+                        fill="transparent"
+                        stroke="#2563eb"
+                        strokeWidth="5"
+                        strokeDasharray={`${belumStroke} 100`}
+                        strokeDashoffset={`-${hadirStroke}`}
+                      />
+                    </>
+                  )}
                 </svg>
               </div>
 
@@ -336,7 +419,7 @@ export const DosenDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-slate-900">{izinCount}</span>
-                    <span className="text-slate-400 font-mono text-[11px] w-12 text-right">0.00%</span>
+                    <span className="text-slate-400 font-mono text-[11px] w-12 text-right">{izinPercent}%</span>
                   </div>
                 </div>
 
@@ -347,7 +430,7 @@ export const DosenDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-slate-900">{tidakHadirCount}</span>
-                    <span className="text-slate-400 font-mono text-[11px] w-12 text-right">0.00%</span>
+                    <span className="text-slate-400 font-mono text-[11px] w-12 text-right">{tidakHadirPercent}%</span>
                   </div>
                 </div>
               </div>
@@ -371,22 +454,22 @@ export const DosenDashboard: React.FC = () => {
             <div className="space-y-3.5 text-xs">
               <div className="flex items-center justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-600">Sesi Bimbingan</span>
-                <span className="font-bold text-slate-900 text-sm">3</span>
+                <span className="font-bold text-slate-900 text-sm">{sessionsThisMonth}</span>
               </div>
 
               <div className="flex items-center justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-600">Konsultasi Individu</span>
-                <span className="font-bold text-slate-900 text-sm">1</span>
+                <span className="font-bold text-slate-900 text-sm">{indThisMonth}</span>
               </div>
 
               <div className="flex items-center justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-600">Mahasiswa Aktif</span>
-                <span className="font-bold text-slate-900 text-sm">3</span>
+                <span className="font-bold text-slate-900 text-sm">{totalStudents}</span>
               </div>
 
               <div className="flex items-center justify-between py-1">
                 <span className="text-slate-600">Perlu Validasi</span>
-                <span className="font-bold text-slate-900 text-sm">2</span>
+                <span className="font-bold text-slate-900 text-sm">{pendingValidations}</span>
               </div>
             </div>
           </div>
@@ -431,75 +514,72 @@ export const DosenDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {/* Row 1: SI-5A */}
-                <tr className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 pr-3">
-                    <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                      SI-5A
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-3 text-slate-700 font-medium">
-                    Sistem Informasi
-                  </td>
-                  <td className="py-3.5 px-3 text-slate-700">
-                    2 Mahasiswa
-                  </td>
-                  <td className="py-3.5 px-3">
-                    <p className="font-bold text-slate-900">Persiapan UTS</p>
-                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">20 Jan 2027</p>
-                  </td>
-                  <td className="py-3.5 px-3 font-bold text-amber-600">
-                    1 Mahasiswa
-                  </td>
-                  <td className="py-3.5 pl-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        to="/dosen/kelas"
-                        className="px-2.5 py-1 rounded border border-slate-200 hover:border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                      >
-                        Buka Kelas →
-                      </Link>
-                      <button className="text-slate-400 hover:text-slate-600 p-1">
-                        <MoreVertical className="w-3.5 h-3.5 stroke-[1.8]" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                {assignments.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                      Belum ada kelas bimbingan yang diploting untuk Anda oleh Admin.
+                    </td>
+                  </tr>
+                ) : (
+                  assignments.map((asg) => {
+                    const studentsInThisClass = students.filter((s) => s.class_id === asg.class_id);
+                    const sessionsInThisClass = classSessions.filter((cs) => cs.assignment_id === asg.id);
+                    const latestSession = sessionsInThisClass[0];
 
-                {/* Row 2: SI-5B */}
-                <tr className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 pr-3">
-                    <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                      SI-5B
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-3 text-slate-700 font-medium">
-                    Sistem Informasi
-                  </td>
-                  <td className="py-3.5 px-3 text-slate-700">
-                    1 Mahasiswa
-                  </td>
-                  <td className="py-3.5 px-3">
-                    <p className="font-bold text-slate-900">Pengarahan Akhir Semester</p>
-                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">15 Jan 2027</p>
-                  </td>
-                  <td className="py-3.5 px-3 font-bold text-amber-600">
-                    1 Mahasiswa
-                  </td>
-                  <td className="py-3.5 pl-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        to="/dosen/kelas"
-                        className="px-2.5 py-1 rounded border border-slate-200 hover:border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                      >
-                        Buka Kelas →
-                      </Link>
-                      <button className="text-slate-400 hover:text-slate-600 p-1">
-                        <MoreVertical className="w-3.5 h-3.5 stroke-[1.8]" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                    const participantsInThisClass = participants.filter((p) =>
+                      sessionsInThisClass.some((cs) => cs.id === p.session_id)
+                    );
+                    const pendingInThisClass = participantsInThisClass.filter(
+                      (p) => p.attendance_status === 'HADIR' && p.validation_status === 'PENDING'
+                    ).length;
+
+                    return (
+                      <tr key={asg.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-3.5 pr-3">
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                            {asg.class?.name || 'Kelas PA'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 text-slate-700 font-medium">
+                          {asg.class?.study_program || 'Sistem Informasi'}
+                        </td>
+                        <td className="py-3.5 px-3 text-slate-700">
+                          {studentsInThisClass.length} Mahasiswa
+                        </td>
+                        <td className="py-3.5 px-3">
+                          {latestSession ? (
+                            <>
+                              <p className="font-bold text-slate-900 truncate max-w-[150px]">
+                                {latestSession.title}
+                              </p>
+                              <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                                {formatDate(latestSession.session_date)}
+                              </p>
+                            </>
+                          ) : (
+                            <span className="text-slate-400 text-[11px]">Belum ada sesi</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-3 font-bold text-amber-600">
+                          {pendingInThisClass} Mahasiswa
+                        </td>
+                        <td className="py-3.5 pl-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              to="/dosen/kelas"
+                              className="px-2.5 py-1 rounded border border-slate-200 hover:border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                            >
+                              Buka Kelas →
+                            </Link>
+                            <button className="text-slate-400 hover:text-slate-600 p-1">
+                              <MoreVertical className="w-3.5 h-3.5 stroke-[1.8]" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -537,7 +617,7 @@ export const DosenDashboard: React.FC = () => {
                           {cs.title}
                         </p>
                         <p className="text-[11px] text-slate-500 mt-0.5">
-                          Sesi Kelas • {cs.session_date}
+                          Sesi Kelas • {formatDate(cs.session_date)}
                         </p>
                       </div>
                     </div>

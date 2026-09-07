@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import { store } from '../../../lib/store';
+import { dosenService } from '../../../services/dosen.service';
 import { 
   Plus, 
   MessageSquare, 
@@ -10,23 +10,30 @@ import {
   Send, 
   MoreVertical,
   ChevronLeft,
-  ChevronRight,
-  UserCheck
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Select } from '../../../components/ui/Select';
 import { Input } from '../../../components/ui/Input';
 import { Modal } from '../../../components/ui/Modal';
 import { formatDate } from '../../../lib/utils';
-import { IndividualGuidanceRequest, IndividualGuidanceStatus } from '../../../types/database.types';
+import { 
+  IndividualGuidanceRequest, 
+  IndividualGuidanceStatus, 
+  GuidanceMessage, 
+  Student, 
+  ClassAdvisorAssignment 
+} from '../../../types/database.types';
 
 export const BimbinganIndividuList: React.FC = () => {
-  const { user } = useAuth();
-  const lecturerId = user?.id;
+  const { user, lecturerProfile } = useAuth();
+  const lecturerId = lecturerProfile?.id || user?.id;
+  const lecturerEmail = user?.email;
 
-  const [requests, setRequests] = useState(() =>
-    store.getIndividualRequests().filter((r) => r.lecturer_id === lecturerId)
-  );
+  const [requests, setRequests] = useState<IndividualGuidanceRequest[]>([]);
+  const [studentsInMyClasses, setStudentsInMyClasses] = useState<Student[]>([]);
+  const [assignments, setAssignments] = useState<ClassAdvisorAssignment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Status Tab Filter: 'SEMUA' | 'MENUNGGU' | 'DIPROSES' | 'SELESAI'
   const [activeTab, setActiveTab] = useState<'SEMUA' | 'MENUNGGU' | 'DIPROSES' | 'SELESAI'>('SEMUA');
@@ -39,105 +46,163 @@ export const BimbinganIndividuList: React.FC = () => {
     return true; // SEMUA
   });
 
-  const [selectedRequest, setSelectedRequest] = useState<IndividualGuidanceRequest | null>(
-    filteredRequests[0] || requests[0] || null
-  );
-
-  const [messages, setMessages] = useState(() =>
-    selectedRequest ? store.getMessages(selectedRequest.id) : []
-  );
-
+  const [selectedRequest, setSelectedRequest] = useState<IndividualGuidanceRequest | null>(null);
+  const [messages, setMessages] = useState<GuidanceMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isNewConsultModalOpen, setIsNewConsultModalOpen] = useState(false);
 
   // Status update form state
   const [statusForm, setStatusForm] = useState({
-    status: (selectedRequest?.status || 'DIPROSES') as IndividualGuidanceStatus,
-    guidance_date: selectedRequest?.guidance_date || new Date().toISOString().split('T')[0],
-    action_plan: selectedRequest?.action_plan || '',
-    final_notes: selectedRequest?.final_notes || '',
+    status: 'DIPROSES' as IndividualGuidanceStatus,
+    guidance_date: new Date().toISOString().split('T')[0],
+    action_plan: '',
+    final_notes: '',
   });
 
   // New consultation form state
-  const studentsInMyClasses = store.getStudents().filter(s => 
-    store.getAssignments().some(a => a.lecturer_id === lecturerId && a.class_id === s.class_id)
-  );
-
   const [newConsultForm, setNewConsultForm] = useState({
-    student_id: studentsInMyClasses[0]?.id || '',
+    student_id: '',
     title: '',
     initial_problem: '',
     guidance_date: new Date().toISOString().split('T')[0]
   });
 
-  const handleSelectRequest = (req: IndividualGuidanceRequest) => {
+  const loadAllData = async () => {
+    setIsLoading(true);
+    try {
+      const [reqs, asgs] = await Promise.all([
+        dosenService.getIndividualRequests(lecturerId, lecturerEmail),
+        dosenService.getAssignments(lecturerId, lecturerEmail)
+      ]);
+
+      setRequests(reqs);
+      setAssignments(asgs);
+
+      const classIds = asgs.map((a) => a.class_id).filter(Boolean);
+      if (classIds.length > 0) {
+        const stds = await dosenService.getStudentsByClassIds(classIds);
+        setStudentsInMyClasses(stds);
+        if (stds.length > 0) {
+          setNewConsultForm((prev) => ({
+            ...prev,
+            student_id: prev.student_id || stds[0].id
+          }));
+        }
+      }
+
+      if (reqs.length > 0) {
+        const currentSelected = selectedRequest ? reqs.find((r) => r.id === selectedRequest.id) || reqs[0] : reqs[0];
+        setSelectedRequest(currentSelected);
+        const msgs = await dosenService.getMessages(currentSelected.id);
+        setMessages(msgs);
+        setStatusForm({
+          status: currentSelected.status,
+          guidance_date: currentSelected.guidance_date || new Date().toISOString().split('T')[0],
+          action_plan: currentSelected.action_plan || '',
+          final_notes: currentSelected.final_notes || '',
+        });
+      } else {
+        setSelectedRequest(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      console.error('Error loading BimbinganIndividuList data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAllData();
+  }, [lecturerId, lecturerEmail]);
+
+  const handleSelectRequest = async (req: IndividualGuidanceRequest) => {
     setSelectedRequest(req);
-    setMessages(store.getMessages(req.id));
     setStatusForm({
       status: req.status,
       guidance_date: req.guidance_date || new Date().toISOString().split('T')[0],
       action_plan: req.action_plan || '',
       final_notes: req.final_notes || '',
     });
+
+    try {
+      const msgs = await dosenService.getMessages(req.id);
+      setMessages(msgs);
+    } catch (err) {
+      console.error('Error loading messages:', err);
+    }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRequest || !user || !newMessage.trim()) return;
 
-    store.sendMessage(selectedRequest.id, user.id, newMessage.trim());
-    setMessages(store.getMessages(selectedRequest.id));
-    setNewMessage('');
+    try {
+      const msg = await dosenService.sendMessage(selectedRequest.id, user.id, newMessage.trim());
+      if (msg) {
+        setMessages((prev) => [...prev, msg]);
+        setNewMessage('');
+      }
+    } catch (err: any) {
+      alert(`Gagal mengirim pesan: ${err?.message || 'Terjadi kesalahan'}`);
+    }
   };
 
-  const handleUpdateStatus = (e: React.FormEvent) => {
+  const handleUpdateStatus = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRequest) return;
 
-    store.updateIndividualRequestStatus(selectedRequest.id, statusForm.status, {
-      guidance_date: statusForm.guidance_date,
-      action_plan: statusForm.action_plan,
-      final_notes: statusForm.final_notes,
-    });
+    try {
+      await dosenService.updateIndividualRequestStatus(selectedRequest.id, statusForm.status, {
+        guidance_date: statusForm.guidance_date,
+        action_plan: statusForm.action_plan,
+        final_notes: statusForm.final_notes,
+      });
 
-    const updatedRequests = store.getIndividualRequests().filter((r) => r.lecturer_id === lecturerId);
-    setRequests(updatedRequests);
-    const refreshed = updatedRequests.find((r) => r.id === selectedRequest.id) || null;
-    setSelectedRequest(refreshed);
-    setIsUpdateModalOpen(false);
+      const updatedRequests = await dosenService.getIndividualRequests(lecturerId, lecturerEmail);
+      setRequests(updatedRequests);
+      const refreshed = updatedRequests.find((r) => r.id === selectedRequest.id) || null;
+      setSelectedRequest(refreshed);
+      setIsUpdateModalOpen(false);
+    } catch (err: any) {
+      alert(`Gagal update status: ${err?.message || 'Terjadi kesalahan'}`);
+    }
   };
 
-  const handleCreateNewConsult = (e: React.FormEvent) => {
+  const handleCreateNewConsult = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newConsultForm.student_id || !newConsultForm.title || !newConsultForm.initial_problem || !lecturerId) {
       alert('Mohon lengkapi formulir konsultasi.');
       return;
     }
 
-    const activeYear = store.getActiveAcademicYear();
+    const academicYearId = assignments[0]?.academic_year_id || 'a0000000-0000-0000-0000-000000000001';
 
-    store.createIndividualRequest({
-      student_id: newConsultForm.student_id,
-      lecturer_id: lecturerId,
-      academic_year_id: activeYear?.id || 'ay-1',
-      title: newConsultForm.title,
-      initial_problem: newConsultForm.initial_problem,
-      guidance_date: newConsultForm.guidance_date
-    });
+    try {
+      const created = await dosenService.createIndividualRequest({
+        student_id: newConsultForm.student_id,
+        lecturer_id: lecturerId,
+        academic_year_id: academicYearId,
+        title: newConsultForm.title,
+        initial_problem: newConsultForm.initial_problem,
+        guidance_date: newConsultForm.guidance_date
+      });
 
-    const updatedRequests = store.getIndividualRequests().filter((r) => r.lecturer_id === lecturerId);
-    setRequests(updatedRequests);
-    if (updatedRequests.length > 0) {
-      handleSelectRequest(updatedRequests[updatedRequests.length - 1]);
+      if (created) {
+        setIsNewConsultModalOpen(false);
+        await loadAllData();
+        setSelectedRequest(created);
+        setNewConsultForm({
+          student_id: studentsInMyClasses[0]?.id || '',
+          title: '',
+          initial_problem: '',
+          guidance_date: new Date().toISOString().split('T')[0]
+        });
+      }
+    } catch (err: any) {
+      alert(`Gagal membuat konsultasi: ${err?.message || 'Terjadi kesalahan'}`);
     }
-    setIsNewConsultModalOpen(false);
-    setNewConsultForm({
-      student_id: studentsInMyClasses[0]?.id || '',
-      title: '',
-      initial_problem: '',
-      guidance_date: new Date().toISOString().split('T')[0]
-    });
   };
 
   // Status badge styling helper
@@ -175,6 +240,17 @@ export const BimbinganIndividuList: React.FC = () => {
 
   const pendingCount = requests.filter(r => r.status === 'DIAJUKAN').length;
   const inProgressCount = requests.filter(r => r.status === 'DIPROSES' || r.status === 'PERLU_TINDAK_LANJUT').length;
+
+  if (isLoading) {
+    return (
+      <div className="p-6 sm:p-8 max-w-[1400px] mx-auto min-h-[400px] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold text-slate-500">Memuat bimbingan individu...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -482,7 +558,7 @@ export const BimbinganIndividuList: React.FC = () => {
           ) : (
             <div className="py-24 text-center space-y-2 text-slate-500">
               <p className="text-sm font-semibold text-slate-700">Pilih permohonan untuk melihat detail.</p>
-              <p className="text-xs text-slate-400">Pilih permohonan bimbingan individu dari panel sebelah kiri.</p>
+              <p className="text-xs text-slate-400">Pilih permohonan bimbingan individu dari panel sebelah kiri atau buat konsultasi baru.</p>
             </div>
           )}
         </div>

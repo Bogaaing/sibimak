@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import { store } from '../../../lib/store';
+import { dosenService } from '../../../services/dosen.service';
 import { Link } from 'react-router-dom';
 import { 
-  History, 
   Search, 
   RotateCcw, 
   FileText, 
@@ -15,26 +14,25 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { formatDate } from '../../../lib/utils';
+import { 
+  ClassAdvisorAssignment, 
+  Student, 
+  ClassGuidanceSession, 
+  ClassGuidanceParticipant, 
+  IndividualGuidanceRequest 
+} from '../../../types/database.types';
 
 export const RiwayatBimbingan: React.FC = () => {
-  const { user } = useAuth();
-  const lecturerId = user?.id;
+  const { user, lecturerProfile } = useAuth();
+  const lecturerId = lecturerProfile?.id || user?.id;
+  const lecturerEmail = user?.email;
 
-  const myAssignments = store.getAssignments().filter(a => a.lecturer_id === lecturerId);
-  const myClassIds = myAssignments.map(a => a.class_id);
-
-  // 1. Fetch Class Guidance Participations for my classes
-  const myClassSessions = store.getClassSessions().filter(cs =>
-    myAssignments.some(a => a.id === cs.assignment_id)
-  );
-  const myParticipants = store.getParticipants().filter(p =>
-    myClassSessions.some(cs => cs.id === p.session_id)
-  );
-
-  // 2. Fetch Individual Guidance Requests for this lecturer
-  const myIndividualRequests = store.getIndividualRequests().filter(
-    r => r.lecturer_id === lecturerId
-  );
+  const [assignments, setAssignments] = useState<ClassAdvisorAssignment[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [classSessions, setClassSessions] = useState<ClassGuidanceSession[]>([]);
+  const [participants, setParticipants] = useState<ClassGuidanceParticipant[]>([]);
+  const [individualRequests, setIndividualRequests] = useState<IndividualGuidanceRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,6 +40,54 @@ export const RiwayatBimbingan: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const [asgs, indReqs] = await Promise.all([
+          dosenService.getAssignments(lecturerId, lecturerEmail),
+          dosenService.getIndividualRequests(lecturerId, lecturerEmail)
+        ]);
+
+        if (!isMounted) return;
+        setAssignments(asgs);
+        setIndividualRequests(indReqs);
+
+        const classIds = asgs.map((a) => a.class_id).filter(Boolean);
+        const assignmentIds = asgs.map((a) => a.id);
+
+        const [stds, sessions] = await Promise.all([
+          dosenService.getStudentsByClassIds(classIds),
+          dosenService.getClassSessions(assignmentIds)
+        ]);
+
+        if (!isMounted) return;
+        setStudents(stds);
+        setClassSessions(sessions);
+
+        const sessionIds = sessions.map((s) => s.id);
+        if (sessionIds.length > 0) {
+          const parts = await dosenService.getParticipants(sessionIds);
+          if (isMounted) setParticipants(parts);
+        } else {
+          if (isMounted) setParticipants([]);
+        }
+      } catch (err) {
+        console.error('Error loading RiwayatBimbingan data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [lecturerId, lecturerEmail]);
 
   // Build unified history list
   const historyItems: Array<{
@@ -61,10 +107,10 @@ export const RiwayatBimbingan: React.FC = () => {
   }> = [];
 
   // Add Class Guidance sessions
-  myParticipants.forEach((p) => {
-    const session = myClassSessions.find((cs) => cs.id === p.session_id);
-    const student = store.getStudents().find((s) => s.id === p.student_id);
-    const assignment = myAssignments.find((a) => a.id === session?.assignment_id);
+  participants.forEach((p) => {
+    const session = classSessions.find((cs) => cs.id === p.session_id);
+    const student = students.find((s) => s.id === p.student_id);
+    const assignment = assignments.find((a) => a.id === session?.assignment_id);
 
     if (session && student) {
       historyItems.push({
@@ -74,7 +120,7 @@ export const RiwayatBimbingan: React.FC = () => {
         studentName: student.profile?.full_name || 'Mahasiswa',
         studentNim: student.nim,
         classId: student.class_id || '',
-        className: assignment?.class?.name || student.class?.name || 'SI-5A',
+        className: assignment?.class?.name || student.class?.name || 'Kelas PA',
         studyProgram: assignment?.class?.study_program || 'Sistem Informasi',
         type: 'KELAS',
         title: session.title,
@@ -86,10 +132,8 @@ export const RiwayatBimbingan: React.FC = () => {
   });
 
   // Add Individual Guidance sessions
-  myIndividualRequests.forEach((ir) => {
-    const student = store.getStudents().find((s) => s.id === ir.student_id);
-    const studentClass = store.getClasses().find((c) => c.id === student?.class_id);
-
+  individualRequests.forEach((ir) => {
+    const student = ir.student;
     if (student) {
       historyItems.push({
         id: `hist-ind-${ir.id}`,
@@ -98,8 +142,8 @@ export const RiwayatBimbingan: React.FC = () => {
         studentName: student.profile?.full_name || 'Mahasiswa',
         studentNim: student.nim,
         classId: student.class_id || '',
-        className: studentClass?.name || 'SI-5A',
-        studyProgram: studentClass?.study_program || 'Sistem Informasi',
+        className: student.class?.name || 'Kelas PA',
+        studyProgram: student.class?.study_program || 'Sistem Informasi',
         type: 'INDIVIDU',
         title: ir.title,
         detail: ir.initial_problem,
@@ -138,6 +182,17 @@ export const RiwayatBimbingan: React.FC = () => {
     setCurrentPage(1);
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-6 sm:p-8 max-w-[1400px] mx-auto min-h-[400px] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold text-slate-500">Memuat riwayat bimbingan akademik...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">
       {/* 1. PAGE HEADER */}
@@ -152,7 +207,7 @@ export const RiwayatBimbingan: React.FC = () => {
         </div>
 
         <div className="text-xs font-bold px-3.5 py-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
-          Total {filteredItems.length} Catatan Bimbingan
+          Total {filteredItems.length} Catatan Riwayat
         </div>
       </div>
 
@@ -160,33 +215,28 @@ export const RiwayatBimbingan: React.FC = () => {
       <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row items-stretch md:items-end justify-between gap-3 sm:gap-4">
         {/* Search Input */}
         <div className="relative flex-1">
-          <label className="text-[11px] font-semibold text-slate-500 block mb-1">
-            Pencarian
-          </label>
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 stroke-[1.8]" />
-            <input
-              type="text"
-              placeholder="Cari mahasiswa, NIM, atau topik..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors placeholder:text-slate-400 font-medium"
-            />
-          </div>
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 stroke-[1.8]" />
+          <input
+            type="text"
+            placeholder="Cari nama mahasiswa, NIM, atau topik bimbingan..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors placeholder:text-slate-400 font-medium"
+          />
         </div>
 
-        {/* Dropdown Jenis Bimbingan */}
-        <div className="space-y-1 flex-shrink-0 min-w-[170px]">
+        {/* Filter Jenis Bimbingan */}
+        <div className="space-y-1 flex-shrink-0 min-w-[150px]">
           <label className="text-[11px] font-semibold text-slate-500 block">
             Jenis Bimbingan
           </label>
           <select
             value={selectedType}
             onChange={(e) => {
-              setSelectedType(e.target.value as 'ALL' | 'KELAS' | 'INDIVIDU');
+              setSelectedType(e.target.value as any);
               setCurrentPage(1);
             }}
             className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer shadow-2xs"
@@ -197,10 +247,10 @@ export const RiwayatBimbingan: React.FC = () => {
           </select>
         </div>
 
-        {/* Dropdown Kelas */}
+        {/* Filter Kelas */}
         <div className="space-y-1 flex-shrink-0 min-w-[150px]">
           <label className="text-[11px] font-semibold text-slate-500 block">
-            Kelas
+            Kelas Perwalian
           </label>
           <select
             value={selectedClass}
@@ -211,7 +261,7 @@ export const RiwayatBimbingan: React.FC = () => {
             className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer shadow-2xs"
           >
             <option value="ALL">Semua Kelas</option>
-            {myAssignments.map((a) => (
+            {assignments.map((a) => (
               <option key={a.class_id} value={a.class_id}>
                 Kelas {a.class?.name}
               </option>
@@ -229,166 +279,121 @@ export const RiwayatBimbingan: React.FC = () => {
         </button>
       </div>
 
-      {/* 3. RIWAYAT TABLE CONTAINER */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-5 sm:p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-            <History className="w-4 h-4 text-blue-600 stroke-[1.8]" />
-            <span>Daftar Riwayat Bimbingan ({filteredItems.length})</span>
-          </h2>
-        </div>
-
-        {filteredItems.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-              <History className="w-6 h-6 stroke-[1.8]" />
-            </div>
-            <p className="text-sm font-semibold text-slate-700">
-              Belum ada riwayat bimbingan pada filter ini.
-            </p>
-            <button
-              onClick={handleResetFilter}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700"
-            >
-              Reset Filter Pencarian
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+      {/* 3. TABLE RIWAYAT BIMBINGAN */}
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-5 space-y-4">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-3">Tanggal</th>
+                <th className="px-4 py-3">Mahasiswa</th>
+                <th className="px-4 py-3">Kelas / Prodi</th>
+                <th className="px-4 py-3">Jenis & Topik</th>
+                <th className="px-4 py-3 text-center">Status / Kehadiran</th>
+                <th className="px-4 py-3 text-center">Validasi Paraf</th>
+                <th className="px-4 py-3 text-right">Formulir</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {paginatedItems.length === 0 ? (
                 <tr>
-                  <th className="px-4 py-3">Tanggal</th>
-                  <th className="px-4 py-3">Mahasiswa</th>
-                  <th className="px-4 py-3">Kelas</th>
-                  <th className="px-4 py-3">Jenis Bimbingan</th>
-                  <th className="px-4 py-3">Topik / Bahasan</th>
-                  <th className="px-4 py-3">Status Validasi</th>
-                  <th className="px-4 py-3 text-right">Formulir</th>
+                  <td colSpan={7} className="px-4 py-12 text-center text-slate-500">
+                    Tidak ada riwayat bimbingan akademik yang sesuai dengan filter.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {paginatedItems.map((item) => (
+              ) : (
+                paginatedItems.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
-                    {/* Tanggal */}
                     <td className="px-4 py-3.5 font-mono text-slate-600 font-medium whitespace-nowrap">
-                      {formatDate(item.date, 'dd/MM/yyyy')}
+                      {formatDate(item.date)}
                     </td>
-
-                    {/* Mahasiswa */}
                     <td className="px-4 py-3.5">
-                      <div className="font-bold text-slate-900 leading-tight">
-                        {item.studentName}
-                      </div>
-                      <div className="text-[10.5px] text-slate-400 font-mono mt-0.5">
-                        NIM: {item.studentNim}
-                      </div>
+                      <div className="font-bold text-slate-900">{item.studentName}</div>
+                      <div className="text-[10.5px] font-mono text-slate-400">{item.studentNim}</div>
                     </td>
-
-                    {/* Kelas */}
                     <td className="px-4 py-3.5">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
                         {item.className}
                       </span>
+                      <p className="text-[10.5px] text-slate-500 mt-0.5">{item.studyProgram}</p>
                     </td>
-
-                    {/* Jenis Bimbingan */}
-                    <td className="px-4 py-3.5">
-                      {item.type === 'KELAS' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
-                          <BookOpenCheck className="w-3 h-3 text-blue-600" />
-                          <span>Bimbingan Kelas</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
-                          <MessagesSquare className="w-3 h-3 text-indigo-600" />
-                          <span>Bimbingan Individu</span>
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Topik / Bahasan */}
                     <td className="px-4 py-3.5 max-w-xs">
-                      <p className="font-bold text-slate-900 truncate">
-                        {item.title}
-                      </p>
-                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                        {item.detail}
-                      </p>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        {item.type === 'KELAS' ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                            <BookOpenCheck className="w-3 h-3" />
+                            Kelas
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            <MessagesSquare className="w-3 h-3" />
+                            Individu
+                          </span>
+                        )}
+                        <span className="font-bold text-slate-900 truncate">{item.title}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 line-clamp-1">{item.detail}</p>
                     </td>
-
-                    {/* Status Validasi */}
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3.5 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-center">
                       {item.isValidated ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>Tervalidasi (Paraf Aktif)</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Valid
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                          <Clock className="w-3 h-3 text-amber-600" />
-                          <span>{item.status}</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          <Clock className="w-3 h-3" />
+                          Pending
                         </span>
                       )}
                     </td>
-
-                    {/* Aksi Formulir */}
-                    <td className="px-4 py-3.5 text-right">
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
                       <Link
                         to={`/report/formulir?studentId=${item.studentId}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs transition-colors"
                       >
                         <FileText className="w-3.5 h-3.5 text-slate-500 stroke-[1.8]" />
-                        <span>Form PDF</span>
+                        <span>Cetak Form</span>
                       </Link>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Pagination Footer */}
-        {filteredItems.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100 text-xs">
-            <span className="text-slate-500 font-medium">
-              Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, filteredItems.length)}–{Math.min(currentPage * itemsPerPage, filteredItems.length)} dari {filteredItems.length} catatan
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100 text-xs">
+          <span className="text-slate-500 font-medium">
+            Menampilkan {filteredItems.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}–
+            {Math.min(currentPage * itemsPerPage, filteredItems.length)} dari {filteredItems.length} catatan
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+              disabled={currentPage <= 1}
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs shadow-2xs">
+              {currentPage} / {totalPages}
             </span>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                <button
-                  key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
-                    currentPage === pageNum
-                      ? 'bg-blue-600 text-white shadow-2xs'
-                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              ))}
-
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+              disabled={currentPage >= totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

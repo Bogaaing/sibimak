@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import { store } from '../../../lib/store';
+import { dosenService } from '../../../services/dosen.service';
 import { Link } from 'react-router-dom';
 import { 
   Plus, 
@@ -14,12 +14,23 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { 
+  ClassAdvisorAssignment, 
+  Student, 
+  ClassGuidanceSession, 
+  ClassGuidanceParticipant 
+} from '../../../types/database.types';
 
 export const KelasBimbinganList: React.FC = () => {
-  const { user } = useAuth();
-  const lecturerId = user?.id;
+  const { user, lecturerProfile } = useAuth();
+  const lecturerId = lecturerProfile?.id || user?.id;
+  const lecturerEmail = user?.email;
 
-  const assignments = store.getAssignments().filter((a) => a.lecturer_id === lecturerId);
+  const [assignments, setAssignments] = useState<ClassAdvisorAssignment[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [classSessions, setClassSessions] = useState<ClassGuidanceSession[]>([]);
+  const [participants, setParticipants] = useState<ClassGuidanceParticipant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // View state: 'list' (default) | 'grid'
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -28,6 +39,49 @@ export const KelasBimbinganList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProdi, setSelectedProdi] = useState('Semua');
   const [selectedStatus, setSelectedStatus] = useState('Semua');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const asgs = await dosenService.getAssignments(lecturerId, lecturerEmail);
+        if (!isMounted) return;
+        setAssignments(asgs);
+
+        const classIds = asgs.map((a) => a.class_id).filter(Boolean);
+        const assignmentIds = asgs.map((a) => a.id);
+
+        const [stds, sessions] = await Promise.all([
+          dosenService.getStudentsByClassIds(classIds),
+          dosenService.getClassSessions(assignmentIds)
+        ]);
+
+        if (!isMounted) return;
+        setStudents(stds);
+        setClassSessions(sessions);
+
+        const sessionIds = sessions.map((s) => s.id);
+        if (sessionIds.length > 0) {
+          const parts = await dosenService.getParticipants(sessionIds);
+          if (isMounted) setParticipants(parts);
+        } else {
+          if (isMounted) setParticipants([]);
+        }
+      } catch (err) {
+        console.error('Error loading KelasBimbinganList data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [lecturerId, lecturerEmail]);
 
   const handleResetFilter = () => {
     setSearchTerm('');
@@ -49,6 +103,17 @@ export const KelasBimbinganList: React.FC = () => {
     return matchesSearch && matchesProdi && matchesStatus;
   });
 
+  if (isLoading) {
+    return (
+      <div className="p-6 sm:p-8 max-w-[1400px] mx-auto min-h-[400px] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold text-slate-500">Memuat data kelas bimbingan...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">
       {/* 1. PAGE HEADER & CTA BUTTON */}
@@ -67,7 +132,7 @@ export const KelasBimbinganList: React.FC = () => {
           className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-2xs transition-colors flex-shrink-0"
         >
           <Plus className="w-4 h-4 stroke-[2]" />
-          <span>Kelas Bimbingan Baru</span>
+          <span>Buat Sesi Bimbingan</span>
         </Link>
       </div>
 
@@ -127,12 +192,12 @@ export const KelasBimbinganList: React.FC = () => {
         </button>
       </div>
 
-      {/* 3. DAFTAR KELAS BIMBINGAN (DIRECTLY AFTER FILTER, NO SUMMARY CARDS) */}
+      {/* 3. DAFTAR KELAS BIMBINGAN */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-5 sm:p-6 space-y-4">
         {/* Container Top Heading & View Toggle */}
         <div className="flex items-center justify-between">
           <h2 className="text-sm sm:text-base font-bold text-slate-900">
-            Daftar Kelas Bimbingan
+            Daftar Kelas Bimbingan ({filteredAssignments.length})
           </h2>
 
           <div className="flex items-center gap-1">
@@ -192,19 +257,18 @@ export const KelasBimbinganList: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredAssignments.map((asg) => {
-                  const studentsInClass = store.getStudents().filter((s) => s.class_id === asg.class_id);
-                  const sessionsInClass = store.getClassSessions().filter((cs) => cs.assignment_id === asg.id);
+                  const studentsInClass = students.filter((s) => s.class_id === asg.class_id);
+                  const sessionsInClass = classSessions.filter((cs) => cs.assignment_id === asg.id);
                   
-                  const allParticipants = store.getParticipants();
-                  const participantsInClass = allParticipants.filter((p) =>
+                  const participantsInClass = participants.filter((p) =>
                     sessionsInClass.some((cs) => cs.id === p.session_id)
                   );
 
                   const pendingValidationCount = participantsInClass.filter(
                     (p) => p.attendance_status === 'HADIR' && p.validation_status === 'PENDING'
-                  ).length || (asg.class?.name === 'SI-5A' || asg.class?.name === 'SI-5B' ? 1 : 0);
+                  ).length;
 
-                  const sessionCount = sessionsInClass.length || (asg.class?.name === 'SI-5A' ? 4 : 0);
+                  const sessionCount = sessionsInClass.length;
 
                   return (
                     <tr key={asg.id} className="hover:bg-slate-50/70 transition-colors">
@@ -213,14 +277,14 @@ export const KelasBimbinganList: React.FC = () => {
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-[14.5px] text-slate-900">
-                              {asg.class?.name || '05SIFM003'}
+                              {asg.class?.name || 'Kelas PA'}
                             </span>
                             <span className="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                               Aktif
                             </span>
                           </div>
                           <p className="text-[11px] text-slate-400 font-medium">
-                            Kelas {asg.class?.name || '05SIFM003'}
+                            Kelas {asg.class?.name || 'Kelas PA'}
                           </p>
                         </div>
                       </td>
@@ -232,12 +296,12 @@ export const KelasBimbinganList: React.FC = () => {
 
                       {/* Tahun Akademik */}
                       <td className="px-4 py-4 text-slate-600 font-medium">
-                        {asg.academic_year?.name || '2024/2025 - Genap'}
+                        {asg.academic_year?.name || '2026/2027 - Ganjil'}
                       </td>
 
                       {/* Total Mahasiswa */}
                       <td className="px-4 py-4 text-slate-800 font-semibold">
-                        {studentsInClass.length || (asg.class?.name === 'SI-5A' ? 2 : 1)} Orang
+                        {studentsInClass.length} Orang
                       </td>
 
                       {/* Sesi Bimbingan */}
@@ -302,19 +366,18 @@ export const KelasBimbinganList: React.FC = () => {
           /* Grid View Mode */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredAssignments.map((asg) => {
-              const studentsInClass = store.getStudents().filter((s) => s.class_id === asg.class_id);
-              const sessionsInClass = store.getClassSessions().filter((cs) => cs.assignment_id === asg.id);
+              const studentsInClass = students.filter((s) => s.class_id === asg.class_id);
+              const sessionsInClass = classSessions.filter((cs) => cs.assignment_id === asg.id);
               
-              const allParticipants = store.getParticipants();
-              const participantsInClass = allParticipants.filter((p) =>
+              const participantsInClass = participants.filter((p) =>
                 sessionsInClass.some((cs) => cs.id === p.session_id)
               );
 
               const pendingValidationCount = participantsInClass.filter(
                 (p) => p.attendance_status === 'HADIR' && p.validation_status === 'PENDING'
-              ).length || (asg.class?.name === 'SI-5A' || asg.class?.name === 'SI-5B' ? 1 : 0);
+              ).length;
 
-              const sessionCount = sessionsInClass.length || (asg.class?.name === 'SI-5A' ? 4 : 0);
+              const sessionCount = sessionsInClass.length;
 
               return (
                 <div key={asg.id} className="p-5 rounded-xl border border-slate-200/80 bg-white shadow-2xs space-y-4">
@@ -336,7 +399,7 @@ export const KelasBimbinganList: React.FC = () => {
                   <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 text-xs">
                     <div>
                       <span className="text-[10.5px] text-slate-400 block">Mahasiswa</span>
-                      <span className="font-bold text-slate-800 mt-0.5 block">{studentsInClass.length || (asg.class?.name === 'SI-5A' ? 2 : 1)} Orang</span>
+                      <span className="font-bold text-slate-800 mt-0.5 block">{studentsInClass.length} Orang</span>
                     </div>
                     <div>
                       <span className="text-[10.5px] text-slate-400 block">Sesi</span>

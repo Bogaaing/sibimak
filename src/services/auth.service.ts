@@ -39,17 +39,7 @@ export const authService = {
           .maybeSingle();
 
         if (profileByEmail) {
-          const oldId = profileByEmail.id;
-          profile = { ...profileByEmail, id: session.user.id, email: emailLower };
-
-          // Synchronize profile ID in database asynchronously
-          try {
-            await supabase.from('profiles').update({ id: session.user.id, email: emailLower }).eq('id', oldId);
-            await supabase.from('students').update({ id: session.user.id }).eq('id', oldId);
-            await supabase.from('lecturers').update({ id: session.user.id }).eq('id', oldId);
-          } catch (syncErr) {
-            console.warn('ID synchronization warning:', syncErr);
-          }
+          profile = profileByEmail;
         } else {
           // JIT: Auto-create profile for newly authenticated user
           const isDosen = emailLower.includes('dosen') || emailLower.includes('asep');
@@ -86,33 +76,25 @@ export const authService = {
       let studentProfile: Student | undefined;
 
       if (profile.role === 'dosen') {
-        let { data: lecturer, error: lecturerError } = await supabase
+        let { data: lecturer } = await supabase
           .from('lecturers')
           .select('*')
-          .eq('id', profile.id)
+          .or(`id.eq.${profile.id},id.eq.${session.user.id}`)
           .maybeSingle();
 
         if (!lecturer) {
-          // Ensure lecturer row exists for this profile
-          const newLecturer: Lecturer = {
-            id: profile.id,
-            nidn: '0411099202',
-            title_prefix: null,
-            title_suffix: 'M.Kom.',
-            department: 'Sistem Informasi',
-            signature_url: '/assets/ahmadasepsuhendi-ttd.png',
-            created_at: new Date().toISOString()
-          };
-          try {
-            await supabase.from('lecturers').upsert(newLecturer);
-            lecturer = newLecturer;
-            // Associate any unassigned class advisor assignments to this active lecturer
-            await supabase.from('class_advisor_assignments').update({ lecturer_id: profile.id }).or(`lecturer_id.is.null,lecturer_id.eq.22222222-2222-2222-2222-222222222222`);
-          } catch (lecErr) {
-            console.warn('Lecturer provisioning note:', lecErr);
-          }
+          const { data: lecByNidn } = await supabase
+            .from('lecturers')
+            .select('*')
+            .eq('nidn', '0411099202')
+            .maybeSingle();
+          lecturer = lecByNidn;
         }
-        lecturerProfile = lecturer || undefined;
+
+        if (lecturer) {
+          lecturerProfile = lecturer;
+          profile.id = lecturer.id;
+        }
       } else if (profile.role === 'mahasiswa') {
         let { data: student, error: studentError } = await supabase
           .from('students')

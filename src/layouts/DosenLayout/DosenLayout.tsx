@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -16,19 +16,44 @@ import {
   ChevronDown,
   Menu,
 } from 'lucide-react';
-import { store } from '../../lib/store';
+import { supabase } from '../../lib/supabase';
+import { dosenService } from '../../services/dosen.service';
 
 export const DosenLayout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, lecturerProfile, logout } = useAuth();
+  const lecturerId = lecturerProfile?.id || user?.id;
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [activeYearName, setActiveYearName] = useState<string>('Tahun Akademik 2026/2027 Ganjil');
+  const [pendingConsultations, setPendingConsultations] = useState<number>(0);
 
-  const activeYear = store.getActiveAcademicYear();
-  const pendingConsultations = store.getIndividualRequests().filter(
-    (r) => r.lecturer_id === user?.id && (r.status === 'DIAJUKAN' || r.status === 'DIPROSES')
-  ).length;
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLayoutMeta = async () => {
+      try {
+        const { data: ay } = await supabase
+          .from('academic_years')
+          .select('name')
+          .eq('is_active', true)
+          .maybeSingle();
+        if (isMounted && ay?.name) {
+          setActiveYearName(ay.name);
+        }
+
+        if (lecturerId || user?.email) {
+          const reqs = await dosenService.getIndividualRequests(lecturerId, user?.email);
+          const pending = reqs.filter(r => r.status === 'DIAJUKAN' || r.status === 'DIPROSES').length;
+          if (isMounted) setPendingConsultations(pending);
+        }
+      } catch (err) {
+        console.error('Error fetching layout metadata:', err);
+      }
+    };
+    fetchLayoutMeta();
+    return () => { isMounted = false; };
+  }, [lecturerId, user?.email]);
 
   const handleLogout = () => {
     logout();
@@ -227,7 +252,7 @@ export const DosenLayout: React.FC = () => {
               </NavLink>
 
               <NavLink
-                to="/report/formulir?studentId=usr-mhs-1"
+                to="/dosen/mahasiswa"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all select-none ${
@@ -314,7 +339,7 @@ export const DosenLayout: React.FC = () => {
             <div className="flex items-center gap-3 flex-shrink-0">
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-xs text-slate-700 font-medium shadow-2xs">
                 <CalendarDays className="w-3.5 h-3.5 text-slate-500 stroke-[1.8]" />
-                <span className="font-semibold">{activeYear?.name || 'Tahun Akademik 2026/2027 Ganjil'}</span>
+                <span className="font-semibold">{activeYearName}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 stroke-[1.8]" />
               </div>
 

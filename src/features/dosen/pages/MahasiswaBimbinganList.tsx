@@ -1,30 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import { store } from '../../../lib/store';
+import { dosenService } from '../../../services/dosen.service';
 import { Search, Mail, Phone, FileText, UsersRound } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { ClassAdvisorAssignment, Student } from '../../../types/database.types';
 
 export const MahasiswaBimbinganList: React.FC = () => {
-  const { user } = useAuth();
-  const lecturerId = user?.id;
+  const { user, lecturerProfile } = useAuth();
+  const lecturerId = lecturerProfile?.id || user?.id;
+  const lecturerEmail = user?.email;
+
   const [searchParams] = useSearchParams();
   const selectedClassParam = searchParams.get('class') || 'ALL';
+
+  const [assignments, setAssignments] = useState<ClassAdvisorAssignment[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState(selectedClassParam);
 
-  const myAssignments = store.getAssignments().filter(a => a.lecturer_id === lecturerId);
-  const myClassIds = myAssignments.map(a => a.class_id);
+  useEffect(() => {
+    let isMounted = true;
 
-  const myStudents = store.getStudents().filter(s => s.class_id && myClassIds.includes(s.class_id));
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const asgs = await dosenService.getAssignments(lecturerId, lecturerEmail);
+        if (!isMounted) return;
+        setAssignments(asgs);
 
-  const filteredStudents = myStudents.filter(s => {
+        const classIds = asgs.map((a) => a.class_id).filter(Boolean);
+        if (classIds.length > 0) {
+          const stds = await dosenService.getStudentsByClassIds(classIds);
+          if (isMounted) setStudents(stds);
+        } else {
+          if (isMounted) setStudents([]);
+        }
+      } catch (err) {
+        console.error('Error loading MahasiswaBimbinganList data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [lecturerId, lecturerEmail]);
+
+  useEffect(() => {
+    if (selectedClassParam) {
+      setFilterClass(selectedClassParam);
+    }
+  }, [selectedClassParam]);
+
+  const filteredStudents = students.filter((s) => {
     const matchSearch =
-      s.profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.nim.includes(searchTerm);
+      (s.profile?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.nim || '').includes(searchTerm);
     const matchClass = filterClass === 'ALL' || s.class_id === filterClass;
     return matchSearch && matchClass;
   });
+
+  if (isLoading) {
+    return (
+      <div className="p-6 sm:p-8 max-w-[1400px] mx-auto min-h-[400px] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold text-slate-500">Memuat data mahasiswa bimbingan...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -48,7 +98,7 @@ export const MahasiswaBimbinganList: React.FC = () => {
             className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer shadow-2xs"
           >
             <option value="ALL">Semua Kelas Anda</option>
-            {myAssignments.map((a) => (
+            {assignments.map((a) => (
               <option key={a.class_id} value={a.class_id}>
                 Kelas {a.class?.name}
               </option>
@@ -86,7 +136,7 @@ export const MahasiswaBimbinganList: React.FC = () => {
               {filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                    Tidak ada mahasiswa ditemukan.
+                    Tidak ada mahasiswa ditemukan pada kelas perwalian Anda.
                   </td>
                 </tr>
               ) : (
@@ -100,17 +150,17 @@ export const MahasiswaBimbinganList: React.FC = () => {
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                        {s.class?.name}
+                        {s.class?.name || 'Kelas PA'}
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-slate-600 font-medium">
-                      {s.program_type} • Angkatan {s.entry_year}
+                      {s.program_type || 'Reguler'} • Angkatan {s.entry_year || '2024'}
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="space-y-1 text-slate-500 font-medium">
                         <div className="flex items-center gap-1.5">
                           <Mail className="w-3.5 h-3.5 text-slate-400 stroke-[1.8]" />
-                          <span>{s.profile?.email}</span>
+                          <span>{s.profile?.email || '-'}</span>
                         </div>
                         {s.profile?.phone_number && (
                           <div className="flex items-center gap-1.5">
