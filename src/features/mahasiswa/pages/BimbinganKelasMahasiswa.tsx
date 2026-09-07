@@ -103,15 +103,6 @@ export const BimbinganKelasMahasiswa: React.FC = () => {
         </p>
       </div>
 
-      {/* 2. INFORMATION PANEL */}
-      <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-2xs">
-        <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 flex-shrink-0 mt-0.5 shadow-2xs">
-          <BookOpen className="w-4 h-4 stroke-[2]" />
-        </div>
-        <div className="text-xs text-[#1E3A8A] leading-relaxed">
-          Kegiatan bimbingan kelas dijadwalkan oleh Dosen PA untuk seluruh mahasiswa di kelas Anda (<strong>Kelas {currentStudent?.class?.name || 'SI-5A'}</strong>). Pastikan Anda melakukan konfirmasi kehadiran dan menuliskan catatan atau pertanyaan sebelum sesi dimulai.
-        </div>
-      </div>
 
       {/* 3. BIMBINGAN SESSIONS LIST */}
       <div className="space-y-4 sm:space-y-5">
