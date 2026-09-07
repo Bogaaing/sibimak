@@ -107,44 +107,6 @@ export const InfoDosenPA: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. DATA AKADEMIK (COMPACT GRID) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 sm:p-6 space-y-4">
-        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-          Data Akademik
-        </span>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">Kelas</span>
-            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{myClass?.name || 'SI-5A'}</span>
-          </div>
-
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">Program</span>
-            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{currentStudent?.program_type || 'Reguler'}</span>
-          </div>
-
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 col-span-2 sm:col-span-1">
-            <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">Program Studi</span>
-            <span className="font-bold text-slate-900 text-sm mt-0.5 block truncate">{myClass?.study_program || 'Sistem Informasi'}</span>
-          </div>
-
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">Angkatan</span>
-            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{currentStudent?.entry_year || '2024'}</span>
-          </div>
-
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">Semester</span>
-            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{semesterNumber}</span>
-          </div>
-
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 col-span-2 sm:col-span-1">
-            <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">Status</span>
-            <span className="font-bold text-emerald-700 text-sm mt-0.5 block">Aktif</span>
-          </div>
-        </div>
-      </div>
 
       {/* 4. DOSEN PEMBIMBING AKADEMIK & KONTAK */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 sm:p-6 space-y-4">
