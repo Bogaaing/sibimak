@@ -26,6 +26,7 @@ export const DosenList: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [targetDeleteId, setTargetDeleteId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     nidn: '',
@@ -103,35 +104,54 @@ export const DosenList: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      const id = editingId || crypto.randomUUID();
       const emailLower = formData.email.trim().toLowerCase();
+      const cleanNidn = formData.nidn.trim();
 
-      // 1. Upsert profile
-      await supabase.from('profiles').upsert({
-        id,
+      // 1. Resolve ID: reuse existing profile/lecturer ID to avoid unique constraint collisions
+      const [profCheck, lecCheck] = await Promise.all([
+        supabase.from('profiles').select('id').eq('email', emailLower).maybeSingle(),
+        supabase.from('lecturers').select('id').eq('nidn', cleanNidn).maybeSingle()
+      ]);
+
+      const targetId = editingId || lecCheck.data?.id || profCheck.data?.id || crypto.randomUUID();
+
+      // 2. Upsert profile
+      const { error: profError } = await supabase.from('profiles').upsert({
+        id: targetId,
         email: emailLower,
-        full_name: formData.full_name,
+        full_name: formData.full_name.trim(),
         role: 'dosen',
-        phone_number: formData.phone_number || null,
+        phone_number: formData.phone_number?.trim() || null,
         is_active: true
       });
 
-      // 2. Upsert lecturer
-      await supabase.from('lecturers').upsert({
-        id,
-        nidn: formData.nidn,
-        title_prefix: formData.title_prefix || null,
-        title_suffix: formData.title_suffix || null,
+      if (profError) {
+        throw new Error(`Gagal menyimpan profil dosen: ${profError.message}`);
+      }
+
+      // 3. Upsert lecturer
+      const { error: lecError } = await supabase.from('lecturers').upsert({
+        id: targetId,
+        nidn: cleanNidn,
+        title_prefix: formData.title_prefix?.trim() || null,
+        title_suffix: formData.title_suffix?.trim() || null,
         department: formData.department,
-        signature_url: formData.signature_url
+        signature_url: formData.signature_url?.trim() || '/assets/ahmadasepsuhendi-ttd.png'
       });
+
+      if (lecError) {
+        throw new Error(`Gagal menyimpan data akademik dosen: ${lecError.message}`);
+      }
 
       await fetchLecturers();
       setIsModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving lecturer:', err);
-      alert('Gagal menyimpan data dosen ke Supabase.');
+      alert(err?.message || 'Gagal menyimpan data dosen ke Supabase.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -358,11 +378,20 @@ export const DosenList: React.FC = () => {
           />
 
           <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsModalOpen(false)}
+              disabled={isSubmitting}
+            >
               Batal
             </Button>
-            <Button type="submit">
-              {editingId ? 'Simpan Perubahan' : 'Tambah Dosen'}
+            <Button 
+              type="submit"
+              isLoading={isSubmitting}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Menyimpan...' : (editingId ? 'Simpan Perubahan' : 'Tambah Dosen')}
             </Button>
           </div>
         </form>

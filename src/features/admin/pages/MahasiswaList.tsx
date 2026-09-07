@@ -186,32 +186,48 @@ export const MahasiswaList: React.FC = () => {
     }
 
     try {
-      const id = editingId || crypto.randomUUID();
+      const emailLower = formData.email.trim().toLowerCase();
+      const cleanNim = formData.nim.trim();
+
+      const [profCheck, stdCheck] = await Promise.all([
+        supabase.from('profiles').select('id').eq('email', emailLower).maybeSingle(),
+        supabase.from('students').select('id').eq('nim', cleanNim).maybeSingle()
+      ]);
+
+      const targetId = editingId || stdCheck.data?.id || profCheck.data?.id || crypto.randomUUID();
 
       // 1. Upsert Profile
-      await supabase.from('profiles').upsert({
-        id,
-        email: formData.email.toLowerCase(),
-        full_name: formData.full_name,
+      const { error: profError } = await supabase.from('profiles').upsert({
+        id: targetId,
+        email: emailLower,
+        full_name: formData.full_name.trim(),
         role: 'mahasiswa',
-        phone_number: formData.phone_number || null,
+        phone_number: formData.phone_number?.trim() || null,
         is_active: true
       });
 
+      if (profError) {
+        throw new Error(`Gagal menyimpan profil: ${profError.message}`);
+      }
+
       // 2. Upsert Student
-      await supabase.from('students').upsert({
-        id,
-        nim: formData.nim,
+      const { error: stdError } = await supabase.from('students').upsert({
+        id: targetId,
+        nim: cleanNim,
         class_id: formData.class_id,
         program_type: formData.program_type,
         entry_year: formData.entry_year
       });
 
+      if (stdError) {
+        throw new Error(`Gagal menyimpan data akademik: ${stdError.message}`);
+      }
+
       await fetchAllData();
       setIsManualModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving student:', err);
-      alert('Gagal menyimpan data mahasiswa ke Supabase.');
+      alert(err?.message || 'Gagal menyimpan data mahasiswa ke Supabase.');
     }
   };
 
