@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { store } from '../../../lib/store';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../lib/supabase';
 import { 
   UserCheck, 
   GraduationCap, 
@@ -14,21 +14,77 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../../../components/ui/Badge';
+import { AcademicYear, ClassAdvisorAssignment, ClassGuidanceSession } from '../../../types/database.types';
 
 export const AdminDashboard: React.FC = () => {
-  const [stats] = useState(() => ({
-    totalDosen: store.getLecturers().length,
-    totalMahasiswa: store.getStudents().length,
-    totalKelas: store.getClasses().length,
-    totalTahunAkademik: store.getAcademicYears().length,
-    totalPlotting: store.getAssignments().length,
-    totalBimbinganKelas: store.getClassSessions().length,
-    totalBimbinganIndividu: store.getIndividualRequests().length,
-  }));
+  const [stats, setStats] = useState({
+    totalDosen: 0,
+    totalMahasiswa: 0,
+    totalKelas: 0,
+    totalTahunAkademik: 0,
+    totalPlotting: 0,
+    totalBimbinganKelas: 0,
+    totalBimbinganIndividu: 0,
+  });
 
-  const activeYear = store.getActiveAcademicYear();
-  const assignments = store.getAssignments();
-  const recentClassSessions = store.getClassSessions().slice(0, 4);
+  const [activeYear, setActiveYear] = useState<AcademicYear | null>(null);
+  const [assignments, setAssignments] = useState<ClassAdvisorAssignment[]>([]);
+  const [recentClassSessions, setRecentClassSessions] = useState<ClassGuidanceSession[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [
+          lecRes,
+          stdRes,
+          clsRes,
+          ayRes,
+          asgRes,
+          sessRes,
+          reqRes
+        ] = await Promise.all([
+          supabase.from('lecturers').select('id', { count: 'exact', head: true }),
+          supabase.from('students').select('id', { count: 'exact', head: true }),
+          supabase.from('classes').select('id', { count: 'exact', head: true }),
+          supabase.from('academic_years').select('*').order('created_at', { ascending: false }),
+          supabase.from('class_advisor_assignments').select(`
+            *,
+            lecturer:lecturers(*, profile:profiles(*)),
+            class:classes(*)
+          `).limit(5),
+          supabase.from('class_guidance_sessions').select(`
+            *,
+            assignment:class_advisor_assignments(
+              *,
+              class:classes(*)
+            )
+          `).order('session_date', { ascending: false }).limit(4),
+          supabase.from('individual_guidance_requests').select('id', { count: 'exact', head: true })
+        ]);
+
+        const academicYears = (ayRes.data || []) as AcademicYear[];
+        const currentActiveYear = academicYears.find(a => a.is_active) || academicYears[0] || null;
+
+        setStats({
+          totalDosen: lecRes.count ?? 0,
+          totalMahasiswa: stdRes.count ?? 0,
+          totalKelas: clsRes.count ?? 0,
+          totalTahunAkademik: academicYears.length,
+          totalPlotting: asgRes.data?.length ?? 0,
+          totalBimbinganKelas: sessRes.data?.length ?? 0,
+          totalBimbinganIndividu: reqRes.count ?? 0,
+        });
+
+        setActiveYear(currentActiveYear);
+        setAssignments((asgRes.data || []) as ClassAdvisorAssignment[]);
+        setRecentClassSessions((sessRes.data || []) as ClassGuidanceSession[]);
+      } catch (err) {
+        console.error('Error loading admin dashboard stats:', err);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   return (
     <div className="p-6 sm:p-8 max-w-[1400px] mx-auto space-y-6">

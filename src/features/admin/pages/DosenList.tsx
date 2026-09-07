@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { store } from '../../../lib/store';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../lib/supabase';
 import { 
   Plus, 
   Search, 
@@ -19,7 +19,8 @@ import { ConfirmationDialog } from '../../../components/feedback/ConfirmationDia
 import { Lecturer } from '../../../types/database.types';
 
 export const DosenList: React.FC = () => {
-  const [lecturers, setLecturers] = useState<Lecturer[]>(() => store.getLecturers());
+  const [lecturers, setLecturers] = useState<Lecturer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -36,6 +37,27 @@ export const DosenList: React.FC = () => {
     phone_number: '',
     signature_url: '/assets/ahmadasepsuhendi-ttd.png',
   });
+
+  const fetchLecturers = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('lecturers')
+        .select('*, profile:profiles(*)')
+        .order('nidn', { ascending: true });
+
+      if (error) throw error;
+      setLecturers((data || []) as Lecturer[]);
+    } catch (err) {
+      console.error('Error fetching lecturers:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLecturers();
+  }, []);
 
   const filteredLecturers = lecturers.filter(
     (l) =>
@@ -74,35 +96,58 @@ export const DosenList: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nidn || !formData.full_name || !formData.email) {
       alert('Mohon lengkapi NIDN, Nama Lengkap, dan Email Dosen.');
       return;
     }
 
-    store.saveLecturer({
-      id: editingId || undefined,
-      nidn: formData.nidn,
-      full_name: formData.full_name,
-      title_prefix: formData.title_prefix,
-      title_suffix: formData.title_suffix,
-      department: formData.department,
-      email: formData.email,
-      phone_number: formData.phone_number,
-      signature_url: formData.signature_url,
-    });
+    try {
+      const id = editingId || crypto.randomUUID();
+      const emailLower = formData.email.trim().toLowerCase();
 
-    setLecturers(store.getLecturers());
-    setIsModalOpen(false);
+      // 1. Upsert profile
+      await supabase.from('profiles').upsert({
+        id,
+        email: emailLower,
+        full_name: formData.full_name,
+        role: 'dosen',
+        phone_number: formData.phone_number || null,
+        is_active: true
+      });
+
+      // 2. Upsert lecturer
+      await supabase.from('lecturers').upsert({
+        id,
+        nidn: formData.nidn,
+        title_prefix: formData.title_prefix || null,
+        title_suffix: formData.title_suffix || null,
+        department: formData.department,
+        signature_url: formData.signature_url
+      });
+
+      await fetchLecturers();
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Error saving lecturer:', err);
+      alert('Gagal menyimpan data dosen ke Supabase.');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (targetDeleteId) {
-      store.deleteLecturer(targetDeleteId);
-      setLecturers(store.getLecturers());
-      setTargetDeleteId(null);
-      setIsDeleteDialogOpen(false);
+      try {
+        await supabase.from('lecturers').delete().eq('id', targetDeleteId);
+        await supabase.from('profiles').delete().eq('id', targetDeleteId);
+        await fetchLecturers();
+      } catch (err) {
+        console.error('Error deleting lecturer:', err);
+        alert('Gagal menghapus dosen. Pastikan tidak ada penugasan kelas yang terikat.');
+      } finally {
+        setTargetDeleteId(null);
+        setIsDeleteDialogOpen(false);
+      }
     }
   };
 
@@ -155,10 +200,19 @@ export const DosenList: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredLecturers.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-medium">Memuat data dosen dari Supabase...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredLecturers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                    Tidak ada data dosen pembimbing akademik ditemukan.
+                    Tidak ada data dosen ditemukan.
                   </td>
                 </tr>
               ) : (

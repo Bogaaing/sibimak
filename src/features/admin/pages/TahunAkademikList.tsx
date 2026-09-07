@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { store } from '../../../lib/store';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../lib/supabase';
 import { 
   Plus, 
   CalendarDays, 
@@ -17,7 +17,8 @@ import { ConfirmationDialog } from '../../../components/feedback/ConfirmationDia
 import { AcademicYear } from '../../../types/database.types';
 
 export const TahunAkademikList: React.FC = () => {
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>(() => store.getAcademicYears());
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [targetDeleteId, setTargetDeleteId] = useState<string | null>(null);
@@ -31,6 +32,27 @@ export const TahunAkademikList: React.FC = () => {
     end_date: '',
     is_active: false,
   });
+
+  const fetchAcademicYears = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('academic_years')
+        .select('*')
+        .order('start_date', { ascending: false });
+
+      if (error) throw error;
+      setAcademicYears((data || []) as AcademicYear[]);
+    } catch (err) {
+      console.error('Error fetching academic years:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAcademicYears();
+  }, []);
 
   const handleOpenAdd = () => {
     setEditingId(null);
@@ -58,38 +80,73 @@ export const TahunAkademikList: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSetActive = (ayId: string) => {
-    store.setActiveAcademicYear(ayId);
-    setAcademicYears(store.getAcademicYears());
+  const handleSetActive = async (ayId: string) => {
+    try {
+      await supabase.from('academic_years').update({ is_active: false }).neq('id', ayId);
+      await supabase.from('academic_years').update({ is_active: true }).eq('id', ayId);
+      await fetchAcademicYears();
+    } catch (err) {
+      console.error('Error setting active academic year:', err);
+      alert('Gagal mengaktifkan tahun akademik.');
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.code || !formData.name || !formData.start_date || !formData.end_date) {
       alert('Mohon lengkapi semua field!');
       return;
     }
 
-    store.saveAcademicYear({
-      id: editingId || undefined,
-      code: formData.code,
-      name: formData.name,
-      semester: formData.semester,
-      start_date: formData.start_date,
-      end_date: formData.end_date,
-      is_active: formData.is_active,
-    });
+    try {
+      if (formData.is_active) {
+        await supabase.from('academic_years').update({ is_active: false }).neq('id', editingId || '');
+      }
 
-    setAcademicYears(store.getAcademicYears());
-    setIsModalOpen(false);
+      if (editingId) {
+        const { error } = await supabase.from('academic_years').update({
+          code: formData.code,
+          name: formData.name,
+          semester: formData.semester,
+          start_date: formData.start_date,
+          end_date: formData.end_date,
+          is_active: formData.is_active,
+        }).eq('id', editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('academic_years').insert({
+          id: crypto.randomUUID(),
+          code: formData.code,
+          name: formData.name,
+          semester: formData.semester,
+          start_date: formData.start_date,
+          end_date: formData.end_date,
+          is_active: formData.is_active,
+        });
+        if (error) throw error;
+      }
+
+      await fetchAcademicYears();
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Error saving academic year:', err);
+      alert('Gagal menyimpan tahun akademik ke Supabase.');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (targetDeleteId) {
-      store.deleteAcademicYear(targetDeleteId);
-      setAcademicYears(store.getAcademicYears());
-      setTargetDeleteId(null);
-      setIsDeleteDialogOpen(false);
+      try {
+        const { error } = await supabase.from('academic_years').delete().eq('id', targetDeleteId);
+        if (error) throw error;
+        await fetchAcademicYears();
+      } catch (err) {
+        console.error('Error deleting academic year:', err);
+        alert('Gagal menghapus tahun akademik. Pastikan tidak ada data kelas yang terikat.');
+      } finally {
+        setTargetDeleteId(null);
+        setIsDeleteDialogOpen(false);
+      }
     }
   };
 
@@ -130,8 +187,24 @@ export const TahunAkademikList: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {academicYears.map((ay) => (
-                <tr key={ay.id} className="hover:bg-slate-50/70 transition-colors">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-medium">Memuat tahun akademik dari Supabase...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : academicYears.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                    Belum ada data tahun akademik.
+                  </td>
+                </tr>
+              ) : (
+                academicYears.map((ay) => (
+                  <tr key={ay.id} className="hover:bg-slate-50/70 transition-colors">
                   <td className="px-4 py-3.5 font-mono font-bold text-blue-600">
                     {ay.code}
                   </td>
@@ -182,7 +255,8 @@ export const TahunAkademikList: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
             </tbody>
           </table>
         </div>

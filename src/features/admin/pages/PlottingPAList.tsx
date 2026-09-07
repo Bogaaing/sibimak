@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { store } from '../../../lib/store';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../lib/supabase';
 import { 
   Plus, 
   GitBranch, 
@@ -15,29 +15,72 @@ import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Modal } from '../../../components/ui/Modal';
 import { ConfirmationDialog } from '../../../components/feedback/ConfirmationDialog';
-import { ClassAdvisorAssignment } from '../../../types/database.types';
+import { ClassAdvisorAssignment, Lecturer, ClassItem, AcademicYear } from '../../../types/database.types';
 
 export const PlottingPAList: React.FC = () => {
-  const [assignments, setAssignments] = useState<ClassAdvisorAssignment[]>(() => store.getAssignments());
-  const [lecturers] = useState(() => store.getLecturers());
-  const [classes] = useState(() => store.getClasses());
-  const [academicYears] = useState(() => store.getAcademicYears());
+  const [assignments, setAssignments] = useState<ClassAdvisorAssignment[]>([]);
+  const [lecturers, setLecturers] = useState<Lecturer[]>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [targetDeleteId, setTargetDeleteId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const activeYear = store.getActiveAcademicYear();
-
   const [formData, setFormData] = useState({
-    lecturer_id: lecturers[0]?.id || '',
-    class_id: classes[0]?.id || '',
-    academic_year_id: activeYear?.id || academicYears[0]?.id || '',
+    lecturer_id: '',
+    class_id: '',
+    academic_year_id: '',
     sk_number: 'SK/2026/FTI/089',
   });
 
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    try {
+      const [asgRes, lecRes, clsRes, ayRes] = await Promise.all([
+        supabase.from('class_advisor_assignments').select(`
+          *,
+          lecturer:lecturers(*, profile:profiles(*)),
+          class:classes(*),
+          academic_year:academic_years(*)
+        `),
+        supabase.from('lecturers').select('*, profile:profiles(*)'),
+        supabase.from('classes').select('*').order('name', { ascending: true }),
+        supabase.from('academic_years').select('*').order('created_at', { ascending: false })
+      ]);
+
+      const fetchedAsg = (asgRes.data || []) as ClassAdvisorAssignment[];
+      const fetchedLec = (lecRes.data || []) as Lecturer[];
+      const fetchedCls = (clsRes.data || []) as ClassItem[];
+      const fetchedAy = (ayRes.data || []) as AcademicYear[];
+
+      setAssignments(fetchedAsg);
+      setLecturers(fetchedLec);
+      setClasses(fetchedCls);
+      setAcademicYears(fetchedAy);
+
+      const activeYear = fetchedAy.find(a => a.is_active) || fetchedAy[0];
+      setFormData(prev => ({
+        ...prev,
+        lecturer_id: prev.lecturer_id || fetchedLec[0]?.id || '',
+        class_id: prev.class_id || fetchedCls[0]?.id || '',
+        academic_year_id: prev.academic_year_id || activeYear?.id || fetchedAy[0]?.id || '',
+      }));
+    } catch (err) {
+      console.error('Error fetching plotting data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
   const handleOpenAdd = () => {
     setEditingId(null);
+    const activeYear = academicYears.find(a => a.is_active) || academicYears[0];
     setFormData({
       lecturer_id: lecturers[0]?.id || '',
       class_id: classes[0]?.id || '',
@@ -58,31 +101,56 @@ export const PlottingPAList: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.lecturer_id || !formData.class_id || !formData.academic_year_id) {
       alert('Mohon pilih Dosen, Kelas, dan Tahun Akademik!');
       return;
     }
 
-    store.saveAssignment({
-      id: editingId || undefined,
-      lecturer_id: formData.lecturer_id,
-      class_id: formData.class_id,
-      academic_year_id: formData.academic_year_id,
-      sk_number: formData.sk_number,
-    });
+    try {
+      if (editingId) {
+        const { error } = await supabase.from('class_advisor_assignments').update({
+          lecturer_id: formData.lecturer_id,
+          class_id: formData.class_id,
+          academic_year_id: formData.academic_year_id,
+          sk_number: formData.sk_number,
+          is_active: true
+        }).eq('id', editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('class_advisor_assignments').insert({
+          id: crypto.randomUUID(),
+          lecturer_id: formData.lecturer_id,
+          class_id: formData.class_id,
+          academic_year_id: formData.academic_year_id,
+          sk_number: formData.sk_number,
+          is_active: true
+        });
+        if (error) throw error;
+      }
 
-    setAssignments(store.getAssignments());
-    setIsModalOpen(false);
+      await fetchAllData();
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Error saving assignment:', err);
+      alert('Gagal menyimpan data plotting ke Supabase.');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (targetDeleteId) {
-      store.deleteAssignment(targetDeleteId);
-      setAssignments(store.getAssignments());
-      setTargetDeleteId(null);
-      setIsDeleteDialogOpen(false);
+      try {
+        const { error } = await supabase.from('class_advisor_assignments').delete().eq('id', targetDeleteId);
+        if (error) throw error;
+        await fetchAllData();
+      } catch (err) {
+        console.error('Error deleting assignment:', err);
+        alert('Gagal menghapus plotting dari Supabase.');
+      } finally {
+        setTargetDeleteId(null);
+        setIsDeleteDialogOpen(false);
+      }
     }
   };
 
@@ -129,7 +197,16 @@ export const PlottingPAList: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {assignments.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-medium">Memuat data plotting dari Supabase...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : assignments.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                     Belum ada data penugasan plotting Dosen PA.
@@ -137,9 +214,9 @@ export const PlottingPAList: React.FC = () => {
                 </tr>
               ) : (
                 assignments.map((asg) => {
-                  const lect = lecturers.find((l) => l.id === asg.lecturer_id);
-                  const cls = classes.find((c) => c.id === asg.class_id);
-                  const ay = academicYears.find((a) => a.id === asg.academic_year_id);
+                  const lect = asg.lecturer || lecturers.find((l) => l.id === asg.lecturer_id);
+                  const cls = asg.class || classes.find((c) => c.id === asg.class_id);
+                  const ay = asg.academic_year || academicYears.find((a) => a.id === asg.academic_year_id);
 
                   return (
                     <tr key={asg.id} className="hover:bg-slate-50/70 transition-colors">
@@ -205,30 +282,30 @@ export const PlottingPAList: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Select
             label="Kelas Perwalian *"
-            options={classes.map((c) => ({
+            options={classes.length > 0 ? classes.map((c) => ({
               value: c.id,
               label: `Kelas ${c.name} (${c.study_program})`,
-            }))}
+            })) : [{ value: '', label: 'Memuat data kelas...' }]}
             value={formData.class_id}
             onChange={(e) => setFormData({ ...formData, class_id: e.target.value })}
           />
 
           <Select
             label="Dosen Pembimbing Akademik (PA) *"
-            options={lecturers.map((l) => ({
+            options={lecturers.length > 0 ? lecturers.map((l) => ({
               value: l.id,
               label: `${getLecturerFullName(l)} (NIDN: ${l.nidn})`,
-            }))}
+            })) : [{ value: '', label: 'Memuat data dosen...' }]}
             value={formData.lecturer_id}
             onChange={(e) => setFormData({ ...formData, lecturer_id: e.target.value })}
           />
 
           <Select
             label="Tahun Akademik *"
-            options={academicYears.map((a) => ({
+            options={academicYears.length > 0 ? academicYears.map((a) => ({
               value: a.id,
-              label: a.name,
-            }))}
+              label: `${a.name}${a.is_active ? ' (Aktif)' : ''}`,
+            })) : [{ value: '', label: 'Memuat tahun akademik...' }]}
             value={formData.academic_year_id}
             onChange={(e) => setFormData({ ...formData, academic_year_id: e.target.value })}
           />

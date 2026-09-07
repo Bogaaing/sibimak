@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { store } from '../../../lib/store';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../lib/supabase';
 import { 
   Plus, 
   Search, 
@@ -14,12 +14,13 @@ import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Modal } from '../../../components/ui/Modal';
 import { ConfirmationDialog } from '../../../components/feedback/ConfirmationDialog';
-import { ClassItem } from '../../../types/database.types';
+import { ClassItem, AcademicYear } from '../../../types/database.types';
 
 export const KelasList: React.FC = () => {
-  const [classes, setClasses] = useState<ClassItem[]>(() => store.getClasses());
-  const [academicYears] = useState(() => store.getAcademicYears());
-  const [students] = useState(() => store.getStudents());
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -30,8 +31,40 @@ export const KelasList: React.FC = () => {
     name: '',
     study_program: 'Sistem Informasi',
     academic_level: 'S1',
-    academic_year_id: academicYears.find(a => a.is_active)?.id || academicYears[0]?.id || '',
+    academic_year_id: '',
   });
+
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    try {
+      const [clsRes, ayRes, stdRes] = await Promise.all([
+        supabase.from('classes').select('*, academic_year:academic_years(*)').order('name', { ascending: true }),
+        supabase.from('academic_years').select('*').order('created_at', { ascending: false }),
+        supabase.from('students').select('id, class_id')
+      ]);
+
+      const fetchedClasses = (clsRes.data || []) as ClassItem[];
+      const fetchedYears = (ayRes.data || []) as AcademicYear[];
+      const fetchedStudents = (stdRes.data || []) as any[];
+
+      setClasses(fetchedClasses);
+      setAcademicYears(fetchedYears);
+      setStudents(fetchedStudents);
+
+      const activeYear = fetchedYears.find(a => a.is_active) || fetchedYears[0];
+      if (activeYear && !formData.academic_year_id) {
+        setFormData(prev => ({ ...prev, academic_year_id: activeYear.id }));
+      }
+    } catch (err) {
+      console.error('Error fetching classes data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
 
   const filteredClasses = classes.filter(
     (c) =>
@@ -41,11 +74,12 @@ export const KelasList: React.FC = () => {
 
   const handleOpenAdd = () => {
     setEditingId(null);
+    const activeYear = academicYears.find(a => a.is_active) || academicYears[0];
     setFormData({
       name: '',
       study_program: 'Sistem Informasi',
       academic_level: 'S1',
-      academic_year_id: academicYears.find(a => a.is_active)?.id || academicYears[0]?.id || '',
+      academic_year_id: activeYear?.id || '',
     });
     setIsModalOpen(true);
   };
@@ -56,36 +90,59 @@ export const KelasList: React.FC = () => {
       name: c.name,
       study_program: c.study_program,
       academic_level: c.academic_level,
-      academic_year_id: c.academic_year_id || '',
+      academic_year_id: c.academic_year_id || academicYears[0]?.id || '',
     });
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.study_program) {
       alert('Mohon lengkapi Nama Kelas dan Program Studi.');
       return;
     }
 
-    store.saveClass({
-      id: editingId || undefined,
-      name: formData.name,
-      study_program: formData.study_program,
-      academic_level: formData.academic_level,
-      academic_year_id: formData.academic_year_id,
-    });
+    try {
+      if (editingId) {
+        const { error } = await supabase.from('classes').update({
+          name: formData.name,
+          study_program: formData.study_program,
+          academic_level: formData.academic_level,
+          academic_year_id: formData.academic_year_id || null,
+        }).eq('id', editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('classes').insert({
+          id: crypto.randomUUID(),
+          name: formData.name,
+          study_program: formData.study_program,
+          academic_level: formData.academic_level,
+          academic_year_id: formData.academic_year_id || null,
+        });
+        if (error) throw error;
+      }
 
-    setClasses(store.getClasses());
-    setIsModalOpen(false);
+      await fetchAllData();
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Error saving class:', err);
+      alert('Gagal menyimpan data kelas ke Supabase.');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (targetDeleteId) {
-      store.deleteClass(targetDeleteId);
-      setClasses(store.getClasses());
-      setTargetDeleteId(null);
-      setIsDeleteDialogOpen(false);
+      try {
+        const { error } = await supabase.from('classes').delete().eq('id', targetDeleteId);
+        if (error) throw error;
+        await fetchAllData();
+      } catch (err) {
+        console.error('Error deleting class:', err);
+        alert('Gagal menghapus kelas. Pastikan tidak ada data mahasiswa/bimbingan yang terikat.');
+      } finally {
+        setTargetDeleteId(null);
+        setIsDeleteDialogOpen(false);
+      }
     }
   };
 
@@ -138,7 +195,16 @@ export const KelasList: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredClasses.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-medium">Memuat data kelas dari Supabase...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredClasses.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                     Tidak ada data kelas ditemukan.
@@ -147,7 +213,7 @@ export const KelasList: React.FC = () => {
               ) : (
                 filteredClasses.map((c) => {
                   const studentCount = students.filter((s) => s.class_id === c.id).length;
-                  const ay = academicYears.find((a) => a.id === c.academic_year_id);
+                  const ay = c.academic_year || academicYears.find((a) => a.id === c.academic_year_id);
 
                   return (
                     <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
@@ -244,10 +310,12 @@ export const KelasList: React.FC = () => {
 
             <Select
               label="Tahun Akademik *"
-              options={academicYears.map((a) => ({
+              options={academicYears.length > 0 ? academicYears.map((a) => ({
                 value: a.id,
-                label: a.name,
-              }))}
+                label: `${a.name}${a.is_active ? ' (Aktif)' : ''}`,
+              })) : [
+                { value: '', label: 'Memuat tahun akademik...' }
+              ]}
               value={formData.academic_year_id}
               onChange={(e) => setFormData({ ...formData, academic_year_id: e.target.value })}
             />
