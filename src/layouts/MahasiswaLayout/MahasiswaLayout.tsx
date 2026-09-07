@@ -9,7 +9,8 @@ import {
   LogOut,
   ChevronDown,
   UserCheck,
-  ShieldCheck
+  ShieldCheck,
+  GraduationCap
 } from 'lucide-react';
 import { store } from '../../lib/store';
 import { useAuth } from '../../hooks/useAuth';
@@ -59,28 +60,26 @@ export const MahasiswaLayout: React.FC = () => {
       {/* 1. TOP MOBILE & DESKTOP HEADER WITH SAFE AREA */}
       <header
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
-        className="no-print bg-white border-b border-slate-200 h-16 sm:h-[68px] px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-50 shadow-2xs"
+        className="no-print bg-white/95 backdrop-blur-md border-b border-slate-200/90 h-14 sm:h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-50 shadow-2xs"
       >
         {/* Left: App Brand & Logo */}
-        <Link to="/mahasiswa/dashboard" className="flex items-center gap-3 min-w-0 group">
-          <img
-            src="/assets/app-logo.png"
-            alt="SiBiMa"
-            className="w-8 h-8 rounded-lg object-contain flex-shrink-0 shadow-2xs transition-transform group-hover:scale-105"
-          />
+        <Link to="/mahasiswa/dashboard" className="flex items-center gap-2.5 min-w-0 group">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white flex-shrink-0 shadow-2xs transition-transform group-hover:scale-105">
+            <GraduationCap className="w-5 h-5 stroke-[2]" />
+          </div>
           <div className="min-w-0">
-            <h1 className="text-base font-bold text-slate-900 tracking-tight leading-tight truncate">
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">
               SiBiMa
             </h1>
-            <p className="text-[11px] text-slate-500 font-medium tracking-tight leading-tight truncate hidden xs:block">
-              Sistem Informasi Bimbingan Akademik
+            <p className="text-[11px] text-slate-500 font-medium tracking-tight leading-none mt-1 hidden xs:block">
+              Sistem Bimbingan Mahasiswa
             </p>
           </div>
         </Link>
 
         {/* Right Controls: Notification & User Avatar */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Notification Button (Min 44x44px touch target) */}
+        <div className="flex items-center gap-2.5">
+          {/* Notification Button (40x40px, min 44x44px touch target) */}
           <div className="relative" ref={notifRef}>
             <button
               type="button"
@@ -89,10 +88,10 @@ export const MahasiswaLayout: React.FC = () => {
                 setIsProfileMenuOpen(false);
               }}
               title="Notifikasi"
-              className="relative min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="relative w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-700 flex items-center justify-center transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
               <Bell className="w-5 h-5 stroke-[1.8]" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-[#EA580C] rounded-full ring-2 ring-white"></span>
             </button>
 
             {/* Notification Popover */}
@@ -136,7 +135,7 @@ export const MahasiswaLayout: React.FC = () => {
             )}
           </div>
 
-          {/* User Profile / Avatar Button (Min 44x44px touch target) */}
+          {/* User Profile / Avatar Button (40x40px, min 44x44px touch target) */}
           <div className="relative" ref={profileMenuRef}>
             <button
               type="button"
@@ -145,20 +144,9 @@ export const MahasiswaLayout: React.FC = () => {
                 setIsNotifOpen(false);
               }}
               title="Menu Profil"
-              className="flex items-center gap-2 min-w-[44px] min-h-[44px] p-1.5 sm:px-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-10 h-10 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs sm:text-sm flex items-center justify-center transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-2xs">
-                {getInitials(user?.full_name)}
-              </div>
-              <div className="text-left hidden md:block">
-                <p className="text-xs font-bold text-slate-900 leading-tight truncate max-w-[120px]">
-                  {user?.full_name?.split(' ')[0] || 'Mahasiswa'}
-                </p>
-                <p className="text-[10px] text-slate-500 font-mono leading-tight">
-                  {currentStudent?.nim || '2022010101'}
-                </p>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden md:block" />
+              <span>{getInitials(user?.full_name)}</span>
             </button>
 
             {/* Profile Dropdown Popover */}
@@ -216,7 +204,7 @@ export const MahasiswaLayout: React.FC = () => {
       {/* 2. MAIN CONTENT AREA (Clean Content Offset & Bottom Safe Area) */}
       <main
         style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom, 0px))' }}
-        className="flex-1 w-full max-w-6xl mx-auto px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8"
+        className="flex-1 w-full max-w-6xl mx-auto px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8"
       >
         <Outlet />
       </main>
@@ -224,67 +212,67 @@ export const MahasiswaLayout: React.FC = () => {
       {/* 3. FIXED BOTTOM NAVIGATION BAR WITH SAFE AREA */}
       <nav
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-        className="no-print fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] px-3 py-1 flex items-center justify-around h-[68px]"
+        className="no-print fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E2E8F0] shadow-[0_-2px_12px_rgba(0,0,0,0.04)] px-3 py-1.5 flex items-center justify-around h-16"
       >
         {/* Tab 1: Beranda */}
         <NavLink
           to="/mahasiswa/dashboard"
           end
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 flex-1 py-1 rounded-lg transition-colors select-none min-h-[44px] ${
+            `flex flex-col items-center justify-center gap-1 flex-1 py-1 px-2 rounded-xl transition-all select-none min-h-[44px] ${
               isActive
-                ? 'text-blue-600 font-bold'
-                : 'text-slate-400 hover:text-slate-600 font-medium'
+                ? 'text-[#2563EB] font-bold bg-blue-50/80'
+                : 'text-[#94A3B8] hover:text-slate-600 font-medium'
             }`
           }
         >
           <House className="w-5 h-5 stroke-[1.8]" />
-          <span className="text-[10.5px] leading-tight">Beranda</span>
+          <span className="text-[11px] leading-tight">Beranda</span>
         </NavLink>
 
         {/* Tab 2: Bimbingan */}
         <NavLink
           to="/mahasiswa/bimbingan"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 flex-1 py-1 rounded-lg transition-colors select-none min-h-[44px] ${
+            `flex flex-col items-center justify-center gap-1 flex-1 py-1 px-2 rounded-xl transition-all select-none min-h-[44px] ${
               isActive
-                ? 'text-blue-600 font-bold'
-                : 'text-slate-400 hover:text-slate-600 font-medium'
+                ? 'text-[#2563EB] font-bold bg-blue-50/80'
+                : 'text-[#94A3B8] hover:text-slate-600 font-medium'
             }`
           }
         >
           <BookOpenCheck className="w-5 h-5 stroke-[1.8]" />
-          <span className="text-[10.5px] leading-tight">Bimbingan</span>
+          <span className="text-[11px] leading-tight">Bimbingan</span>
         </NavLink>
 
         {/* Tab 3: Konsultasi */}
         <NavLink
           to="/mahasiswa/konsultasi"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 flex-1 py-1 rounded-lg transition-colors select-none min-h-[44px] ${
+            `flex flex-col items-center justify-center gap-1 flex-1 py-1 px-2 rounded-xl transition-all select-none min-h-[44px] ${
               isActive
-                ? 'text-blue-600 font-bold'
-                : 'text-slate-400 hover:text-slate-600 font-medium'
+                ? 'text-[#2563EB] font-bold bg-blue-50/80'
+                : 'text-[#94A3B8] hover:text-slate-600 font-medium'
             }`
           }
         >
           <MessagesSquare className="w-5 h-5 stroke-[1.8]" />
-          <span className="text-[10.5px] leading-tight">Konsultasi</span>
+          <span className="text-[11px] leading-tight">Konsultasi</span>
         </NavLink>
 
         {/* Tab 4: Profil */}
         <NavLink
           to="/mahasiswa/profil"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 flex-1 py-1 rounded-lg transition-colors select-none min-h-[44px] ${
+            `flex flex-col items-center justify-center gap-1 flex-1 py-1 px-2 rounded-xl transition-all select-none min-h-[44px] ${
               isActive
-                ? 'text-blue-600 font-bold'
-                : 'text-slate-400 hover:text-slate-600 font-medium'
+                ? 'text-[#2563EB] font-bold bg-blue-50/80'
+                : 'text-[#94A3B8] hover:text-slate-600 font-medium'
             }`
           }
         >
           <UserRound className="w-5 h-5 stroke-[1.8]" />
-          <span className="text-[10.5px] leading-tight">Profil</span>
+          <span className="text-[11px] leading-tight">Profil</span>
         </NavLink>
       </nav>
 
