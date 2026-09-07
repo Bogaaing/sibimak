@@ -8,11 +8,7 @@ import {
   Phone, 
   FileText, 
   MessagesSquare, 
-  GraduationCap,
   CheckCircle2,
-  BookOpen,
-  Landmark,
-  Users,
   Copy,
   Check,
   ExternalLink,
@@ -152,69 +148,7 @@ export const InfoDosenPA: React.FC = () => {
       </div>
 
       {/* ========================================================= */}
-      {/* 3. INFORMASI AKADEMIK (3-COLUMN GRID)                     */}
-      {/* ========================================================= */}
-      <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] p-5 sm:p-6 space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-3.5 h-3.5 stroke-[2.2]" />
-          </div>
-          <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-            INFORMASI AKADEMIK
-          </span>
-        </div>
-
-        {/* 3-Column Grid */}
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-          {/* Kelas */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-100/90 flex items-center gap-2.5 sm:gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-4.5 h-4.5 stroke-[2]" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
-                Kelas
-              </p>
-              <p className="text-xs sm:text-sm font-extrabold text-[#0F172A] leading-tight mt-1 truncate">
-                {myClass?.name || 'SI-5A'}
-              </p>
-            </div>
-          </div>
-
-          {/* Program */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-100/90 flex items-center gap-2.5 sm:gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center flex-shrink-0">
-              <Landmark className="w-4.5 h-4.5 stroke-[2]" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
-                Program
-              </p>
-              <p className="text-xs sm:text-sm font-extrabold text-[#0F172A] leading-tight mt-1 truncate">
-                {currentStudent?.program_type || 'Reguler'}
-              </p>
-            </div>
-          </div>
-
-          {/* Angkatan */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-100/90 flex items-center gap-2.5 sm:gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center flex-shrink-0">
-              <Users className="w-4.5 h-4.5 stroke-[2]" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
-                Angkatan
-              </p>
-              <p className="text-xs sm:text-sm font-extrabold text-[#0F172A] leading-tight mt-1 truncate">
-                {currentStudent?.entry_year || '2024'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 4. DOSEN PEMBIMBING AKADEMIK & KONTAK                     */}
+      {/* 3. DOSEN PEMBIMBING AKADEMIK & KONTAK                     */}
       {/* ========================================================= */}
       <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] p-5 sm:p-6 space-y-4">
         {/* Header Row */}
