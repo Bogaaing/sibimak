@@ -70,7 +70,25 @@ export const authService = {
       throw new Error('Password wajib diisi.');
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    let cleanEmail = email.trim().toLowerCase();
+
+    // If identifier doesn't have '@', check if it is a Lecturer NIDN
+    if (!cleanEmail.includes('@')) {
+      try {
+        const { data: lecturer } = await supabase
+          .from('lecturers')
+          .select('*, profile:profiles(*)')
+          .eq('nidn', email.trim())
+          .maybeSingle();
+
+        if (lecturer?.profile?.email) {
+          cleanEmail = lecturer.profile.email.toLowerCase();
+        }
+      } catch (err) {
+        console.warn('Could not lookup NIDN:', err);
+      }
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password
@@ -100,9 +118,25 @@ export const authService = {
     const trimmedNim = nim.trim();
     let email = trimmedNim.toLowerCase();
 
-    // If identifier doesn't contain '@', convert standard NIM to student campus email
+    // If identifier doesn't contain '@', dynamically lookup student's registered email by NIM
     if (!email.includes('@')) {
-      email = `${trimmedNim}@mahasiswa.unpam.ac.id`;
+      try {
+        const { data: student } = await supabase
+          .from('students')
+          .select('*, profile:profiles(*)')
+          .eq('nim', trimmedNim)
+          .maybeSingle();
+
+        if (student?.profile?.email) {
+          email = student.profile.email;
+        } else {
+          // Fallback to unpam.ac.id domain
+          email = `${trimmedNim}@unpam.ac.id`;
+        }
+      } catch (err) {
+        console.warn('Could not lookup NIM, using fallback:', err);
+        email = `${trimmedNim}@unpam.ac.id`;
+      }
     }
 
     return await this.loginWithEmail(email, password);
