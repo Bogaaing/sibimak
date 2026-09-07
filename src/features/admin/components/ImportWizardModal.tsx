@@ -150,9 +150,9 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
       setIsImportComplete(true);
       setShowConfirmModal(false);
       onSuccess();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error committing batch import:', err);
-      alert('Terjadi kesalahan saat menyimpan data ke Supabase.');
+      alert(err?.message || 'Terjadi kesalahan saat menyimpan data ke Supabase.');
     } finally {
       setIsProcessing(false);
     }
@@ -412,7 +412,7 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-2xs">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-2xs">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4 animate-in zoom-in-95">
             <h4 className="text-sm font-bold text-slate-900">
               Konfirmasi Import Mahasiswa
@@ -426,11 +426,20 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
               </p>
             )}
             <div className="flex justify-end gap-2.5 pt-2">
-              <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowConfirmModal(false)}
+                disabled={isProcessing}
+              >
                 Batal
               </Button>
-              <Button onClick={handleCommitImport}>
-                Import Sekarang
+              <Button 
+                onClick={handleCommitImport}
+                isLoading={isProcessing}
+                disabled={isProcessing}
+                className="gap-2 font-bold"
+              >
+                {isProcessing ? 'Mengimport Data...' : 'Import Sekarang'}
               </Button>
             </div>
           </div>

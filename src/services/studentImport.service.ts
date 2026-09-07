@@ -325,74 +325,88 @@ export const studentImportService = {
   },
 
   /**
-   * Commit valid rows to Supabase database for the specified class
+   * Commit valid rows to Supabase database for the specified class in bulk
    */
   async commitBatchImport(validRows: ValidatedImportRow[], classId: string, entryYear: string = '2024'): Promise<number> {
     const validItems = validRows.filter(r => r.status === 'VALID');
     if (validItems.length === 0) return 0;
 
-    let importedCount = 0;
+    // 1. Fetch existing profiles & students to reuse existing IDs (prevents unique constraint collision)
+    const nims = validItems.map(r => r.nim.trim());
+    const emails = validItems.map(r => (r.email ? r.email.trim().toLowerCase() : `${r.nim.trim()}@mahasiswa.unpam.ac.id`));
 
-    for (const row of validItems) {
-      try {
-        const studentId = crypto.randomUUID();
-        const defaultEmail = row.email || `${row.nim}@mahasiswa.unpam.ac.id`;
+    const [existingProfilesRes, existingStudentsRes] = await Promise.all([
+      supabase.from('profiles').select('id, email').in('email', emails),
+      supabase.from('students').select('id, nim').in('nim', nims)
+    ]);
 
-        // 1. Upsert Profile to Supabase
-        const { error: profError } = await supabase.from('profiles').upsert({
-          id: studentId,
-          email: defaultEmail.toLowerCase(),
-          full_name: row.fullName,
-          role: 'mahasiswa',
-          phone_number: row.phoneNumber || null,
-          is_active: true
-        });
+    const emailToId = new Map<string, string>();
+    (existingProfilesRes.data || []).forEach(p => {
+      if (p.email) emailToId.set(p.email.toLowerCase(), p.id);
+    });
 
-        let targetId = studentId;
+    const nimToId = new Map<string, string>();
+    (existingStudentsRes.data || []).forEach(s => {
+      if (s.nim) nimToId.set(s.nim, s.id);
+    });
 
-        if (profError) {
-          // If email already exists, retrieve that profile's id
-          const { data: existingProf } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', defaultEmail.toLowerCase())
-            .maybeSingle();
+    const profilesBatch: any[] = [];
+    const studentsBatch: any[] = [];
+    const storeBatch: any[] = [];
 
-          if (existingProf) {
-            targetId = existingProf.id;
-          }
-        }
+    validItems.forEach(row => {
+      const cleanNim = row.nim.trim();
+      const defaultEmail = (row.email ? row.email.trim() : `${cleanNim}@mahasiswa.unpam.ac.id`).toLowerCase();
+      
+      // Determine consistent ID
+      const studentId = nimToId.get(cleanNim) || emailToId.get(defaultEmail) || crypto.randomUUID();
 
-        // 2. Upsert Student to Supabase
-        const { error: stdError } = await supabase.from('students').upsert({
-          id: targetId,
-          nim: row.nim,
-          class_id: classId,
-          program_type: 'Reguler',
-          entry_year: entryYear
-        });
+      profilesBatch.push({
+        id: studentId,
+        email: defaultEmail,
+        full_name: row.fullName.trim(),
+        role: 'mahasiswa',
+        phone_number: row.phoneNumber?.trim() || null,
+        is_active: true
+      });
 
-        if (!stdError) {
-          importedCount++;
-          // Also sync to store in-memory/cache
-          store.saveStudent({
-            id: targetId,
-            nim: row.nim,
-            full_name: row.fullName,
-            email: defaultEmail,
-            phone_number: row.phoneNumber || '',
-            class_id: classId,
-            program_type: 'Reguler',
-            entry_year: entryYear
-          });
-        } else {
-          console.error('Failed to insert student row:', row.nim, stdError);
-        }
-      } catch (rowErr) {
-        console.error('Error during student import:', row.nim, rowErr);
-      }
+      studentsBatch.push({
+        id: studentId,
+        nim: cleanNim,
+        class_id: classId,
+        program_type: 'Reguler',
+        entry_year: entryYear
+      });
+
+      storeBatch.push({
+        id: studentId,
+        nim: cleanNim,
+        full_name: row.fullName.trim(),
+        email: defaultEmail,
+        phone_number: row.phoneNumber?.trim() || '',
+        class_id: classId,
+        program_type: 'Reguler',
+        entry_year: entryYear
+      });
+    });
+
+    // 2. Batch upsert profiles in one query
+    const { error: profErr } = await supabase.from('profiles').upsert(profilesBatch);
+    if (profErr) {
+      console.error('Error batch upserting profiles:', profErr);
+      throw new Error(`Gagal menyimpan data profil ke Supabase: ${profErr.message}`);
     }
 
-    return importedCount;
+    // 3. Batch upsert students in one query
+    const { error: stdErr } = await supabase.from('students').upsert(studentsBatch);
+    if (stdErr) {
+      console.error('Error batch upserting students:', stdErr);
+      throw new Error(`Gagal menyimpan data mahasiswa ke kelas: ${stdErr.message}`);
+    }
+
+    // 4. Update in-memory store cache
+    storeBatch.forEach(s => store.saveStudent(s));
+
+    return studentsBatch.length;
   }
 };
