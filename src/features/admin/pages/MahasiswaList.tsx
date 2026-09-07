@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { store } from '../../../lib/store';
+import { supabase } from '../../../lib/supabase';
 import { 
   Plus, 
   Search, 
@@ -24,12 +25,13 @@ import { Badge } from '../../../components/ui/Badge';
 import { ConfirmationDialog } from '../../../components/feedback/ConfirmationDialog';
 import { ImportWizardModal } from '../components/ImportWizardModal';
 import { StudentDetailModal } from '../components/StudentDetailModal';
-import { Student } from '../../../types/database.types';
+import { Student, ClassItem, AcademicYear } from '../../../types/database.types';
 
 export const MahasiswaList: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>(() => store.getStudents());
-  const classes = store.getClasses();
-  const academicYears = store.getAcademicYears();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,10 +68,51 @@ export const MahasiswaList: React.FC = () => {
     full_name: '',
     email: '',
     phone_number: '',
-    class_id: classes[0]?.id || '',
+    class_id: '',
     program_type: 'Reguler',
     entry_year: '2024',
   });
+
+  const fetchAllData = async () => {
+    setIsLoadingData(true);
+    try {
+      const [stdRes, clsRes, ayRes] = await Promise.all([
+        supabase
+          .from('students')
+          .select(`
+            *,
+            profile:profiles(*),
+            class:classes(
+              *,
+              academic_year:academic_years(*)
+            )
+          `)
+          .order('nim', { ascending: true }),
+        supabase.from('classes').select('*, academic_year:academic_years(*)').order('name', { ascending: true }),
+        supabase.from('academic_years').select('*').order('created_at', { ascending: false })
+      ]);
+
+      const fetchedStudents = (stdRes.data || []) as Student[];
+      const fetchedClasses = (clsRes.data || []) as ClassItem[];
+      const fetchedYears = (ayRes.data || []) as AcademicYear[];
+
+      setStudents(fetchedStudents);
+      setClasses(fetchedClasses);
+      setAcademicYears(fetchedYears);
+
+      if (fetchedClasses.length > 0 && !formData.class_id) {
+        setFormData(prev => ({ ...prev, class_id: fetchedClasses[0].id }));
+      }
+    } catch (err) {
+      console.error('Error fetching admin student data:', err);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
 
   const handleResetFilter = () => {
     setSearchTerm('');
@@ -135,39 +178,60 @@ export const MahasiswaList: React.FC = () => {
     setIsDetailModalOpen(true);
   };
 
-  const handleManualSubmit = (e: React.FormEvent) => {
+  const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nim || !formData.full_name || !formData.email) {
       alert('Mohon lengkapi NIM, Nama Lengkap, dan Email.');
       return;
     }
 
-    store.saveStudent({
-      id: editingId || undefined,
-      nim: formData.nim,
-      full_name: formData.full_name,
-      email: formData.email,
-      phone_number: formData.phone_number,
-      class_id: formData.class_id,
-      program_type: formData.program_type,
-      entry_year: formData.entry_year,
-    });
+    try {
+      const id = editingId || crypto.randomUUID();
 
-    setStudents(store.getStudents());
-    setIsManualModalOpen(false);
+      // 1. Upsert Profile
+      await supabase.from('profiles').upsert({
+        id,
+        email: formData.email.toLowerCase(),
+        full_name: formData.full_name,
+        role: 'mahasiswa',
+        phone_number: formData.phone_number || null,
+        is_active: true
+      });
+
+      // 2. Upsert Student
+      await supabase.from('students').upsert({
+        id,
+        nim: formData.nim,
+        class_id: formData.class_id,
+        program_type: formData.program_type,
+        entry_year: formData.entry_year
+      });
+
+      await fetchAllData();
+      setIsManualModalOpen(false);
+    } catch (err) {
+      console.error('Error saving student:', err);
+      alert('Gagal menyimpan data mahasiswa ke Supabase.');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (targetDeleteId) {
-      store.deleteStudent(targetDeleteId);
-      setStudents(store.getStudents());
-      setTargetDeleteId(null);
-      setIsDeleteDialogOpen(false);
+      try {
+        await supabase.from('students').delete().eq('id', targetDeleteId);
+        await supabase.from('profiles').delete().eq('id', targetDeleteId);
+        await fetchAllData();
+      } catch (err) {
+        console.error('Error deleting student:', err);
+      } finally {
+        setTargetDeleteId(null);
+        setIsDeleteDialogOpen(false);
+      }
     }
   };
 
   const handleImportSuccess = () => {
-    setStudents(store.getStudents());
+    fetchAllData();
   };
 
   return (
@@ -340,7 +404,12 @@ export const MahasiswaList: React.FC = () => {
         </div>
 
         {/* Table / Empty State */}
-        {filteredStudents.length === 0 ? (
+        {isLoadingData ? (
+          <div className="p-12 text-center space-y-3">
+            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-medium text-slate-500">Memuat data mahasiswa dari Supabase...</p>
+          </div>
+        ) : filteredStudents.length === 0 ? (
           <div className="p-12 text-center space-y-4">
             <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
               <GraduationCap className="w-6 h-6 stroke-[1.8]" />
@@ -394,7 +463,7 @@ export const MahasiswaList: React.FC = () => {
                         {s.nim}
                       </td>
                       <td className="px-4 py-3.5 font-bold text-slate-900">
-                        {s.profile?.full_name}
+                        {s.profile?.full_name || (s as any).full_name || '-'}
                       </td>
                       <td className="px-4 py-3.5">
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
@@ -405,10 +474,10 @@ export const MahasiswaList: React.FC = () => {
                         {currentClass?.study_program || 'Sistem Informasi'}
                       </td>
                       <td className="px-4 py-3.5 text-slate-600">
-                        {s.profile?.email}
+                        {s.profile?.email || (s as any).email || '-'}
                       </td>
                       <td className="px-4 py-3.5 font-mono text-slate-600">
-                        {s.profile?.phone_number || '-'}
+                        {s.profile?.phone_number || (s as any).phone_number || '-'}
                       </td>
                       <td className="px-4 py-3.5">
                         <Badge variant={s.profile?.is_active !== false ? 'success' : 'default'} size="sm">

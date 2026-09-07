@@ -1,4 +1,5 @@
 import { store } from '../lib/store';
+import { supabase } from '../lib/supabase';
 
 export interface RawImportRow {
   nim: string;
@@ -192,11 +193,30 @@ export const studentImportService = {
   /**
    * Validate all imported rows against rules and database state
    */
-  validateRows(rawRows: RawImportRow[], _targetClassId?: string): ImportValidationResult {
-    const existingStudents = store.getStudents();
-    const existingClasses = store.getClasses();
-    const seenNimsInFile = new Set<string>();
+  async validateRows(
+    rawRows: RawImportRow[], 
+    _targetClassId?: string,
+    existingStudentsOverride?: any[],
+    existingClassesOverride?: any[]
+  ): Promise<ImportValidationResult> {
+    let existingStudents = existingStudentsOverride;
+    let existingClasses = existingClassesOverride;
 
+    if (!existingStudents || !existingClasses) {
+      try {
+        const [stdRes, clsRes] = await Promise.all([
+          supabase.from('students').select('id, nim, class_id'),
+          supabase.from('classes').select('id, name')
+        ]);
+        existingStudents = stdRes.data || store.getStudents();
+        existingClasses = clsRes.data || store.getClasses();
+      } catch {
+        existingStudents = store.getStudents();
+        existingClasses = store.getClasses();
+      }
+    }
+
+    const seenNimsInFile = new Set<string>();
     const validatedList: ValidatedImportRow[] = [];
 
     rawRows.forEach((row, index) => {
@@ -263,10 +283,10 @@ export const studentImportService = {
       }
       seenNimsInFile.add(cleanNim);
 
-      // Rule 5: Duplikasi di database / store
-      const dbMatch = existingStudents.find(s => s.nim === cleanNim);
+      // Rule 5: Duplikasi di database
+      const dbMatch = existingStudents!.find((s: any) => s.nim === cleanNim);
       if (dbMatch) {
-        const studentClass = existingClasses.find(c => c.id === dbMatch.class_id);
+        const studentClass = existingClasses!.find((c: any) => c.id === dbMatch.class_id);
         const className = studentClass?.name || 'Lainnya';
         validatedList.push({
           rowNumber: rowNum,
@@ -305,26 +325,73 @@ export const studentImportService = {
   },
 
   /**
-   * Commit valid rows to store for the specified class
+   * Commit valid rows to Supabase database for the specified class
    */
-  commitBatchImport(validRows: ValidatedImportRow[], classId: string, entryYear: string = '2024'): number {
+  async commitBatchImport(validRows: ValidatedImportRow[], classId: string, entryYear: string = '2024'): Promise<number> {
+    const validItems = validRows.filter(r => r.status === 'VALID');
+    if (validItems.length === 0) return 0;
+
     let importedCount = 0;
 
-    validRows.forEach(row => {
-      if (row.status === 'VALID') {
-        const defaultEmail = row.email || `${row.nim}@student.kampus.ac.id`;
-        store.saveStudent({
-          nim: row.nim,
+    for (const row of validItems) {
+      try {
+        const studentId = crypto.randomUUID();
+        const defaultEmail = row.email || `${row.nim}@mahasiswa.unpam.ac.id`;
+
+        // 1. Upsert Profile to Supabase
+        const { error: profError } = await supabase.from('profiles').upsert({
+          id: studentId,
+          email: defaultEmail.toLowerCase(),
           full_name: row.fullName,
-          email: defaultEmail,
-          phone_number: row.phoneNumber || '',
+          role: 'mahasiswa',
+          phone_number: row.phoneNumber || null,
+          is_active: true
+        });
+
+        let targetId = studentId;
+
+        if (profError) {
+          // If email already exists, retrieve that profile's id
+          const { data: existingProf } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', defaultEmail.toLowerCase())
+            .maybeSingle();
+
+          if (existingProf) {
+            targetId = existingProf.id;
+          }
+        }
+
+        // 2. Upsert Student to Supabase
+        const { error: stdError } = await supabase.from('students').upsert({
+          id: targetId,
+          nim: row.nim,
           class_id: classId,
           program_type: 'Reguler',
           entry_year: entryYear
         });
-        importedCount++;
+
+        if (!stdError) {
+          importedCount++;
+          // Also sync to store in-memory/cache
+          store.saveStudent({
+            id: targetId,
+            nim: row.nim,
+            full_name: row.fullName,
+            email: defaultEmail,
+            phone_number: row.phoneNumber || '',
+            class_id: classId,
+            program_type: 'Reguler',
+            entry_year: entryYear
+          });
+        } else {
+          console.error('Failed to insert student row:', row.nim, stdError);
+        }
+      } catch (rowErr) {
+        console.error('Error during student import:', row.nim, rowErr);
       }
-    });
+    }
 
     return importedCount;
   }

@@ -1,5 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { store } from '../../../lib/store';
+import { supabase } from '../../../lib/supabase';
+import { AcademicYear, ClassItem } from '../../../types/database.types';
 import { 
   studentImportService, 
   ImportValidationResult, 
@@ -33,13 +35,12 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const academicYears = store.getAcademicYears();
-  const classes = store.getClasses();
-  const activeYear = store.getActiveAcademicYear();
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
 
   // Wizard States
-  const [selectedYearId, setSelectedYearId] = useState<string>(activeYear?.id || academicYears[0]?.id || '');
-  const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || '');
+  const [selectedYearId, setSelectedYearId] = useState<string>('');
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] = useState<ImportValidationResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -48,6 +49,34 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    Promise.all([
+      supabase.from('academic_years').select('*').order('created_at', { ascending: false }),
+      supabase.from('classes').select('*').order('name', { ascending: true })
+    ]).then(([ayRes, clsRes]) => {
+      const ays = ayRes.data || store.getAcademicYears();
+      const cls = clsRes.data || store.getClasses();
+      setAcademicYears(ays);
+      setClasses(cls);
+
+      if (cls.length > 0 && !selectedClassId) {
+        setSelectedClassId(cls[0].id);
+      }
+      const active = ays.find(y => y.is_active);
+      if (active && !selectedYearId) {
+        setSelectedYearId(active.id);
+      } else if (ays.length > 0 && !selectedYearId) {
+        setSelectedYearId(ays[0].id);
+      }
+    }).catch(err => {
+      console.warn('Error fetching classes for import:', err);
+      setAcademicYears(store.getAcademicYears());
+      setClasses(store.getClasses());
+    });
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -74,7 +103,7 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
     setIsProcessing(true);
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
         const rawRows = studentImportService.parseFileContent(text);
@@ -82,7 +111,7 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
           alert('File template kosong atau format kolom tidak sesuai.');
           setValidationResult(null);
         } else {
-          const result = studentImportService.validateRows(rawRows, selectedClassId);
+          const result = await studentImportService.validateRows(rawRows, selectedClassId);
           setValidationResult(result);
         }
       } catch (err) {
@@ -106,19 +135,27 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
     }
   };
 
-  const handleCommitImport = () => {
+  const handleCommitImport = async () => {
     if (!validationResult || validationResult.validCount === 0) return;
 
-    const count = studentImportService.commitBatchImport(
-      validationResult.rows,
-      selectedClassId,
-      targetYear?.name?.slice(0, 4) || '2024'
-    );
+    setIsProcessing(true);
+    try {
+      const count = await studentImportService.commitBatchImport(
+        validationResult.rows,
+        selectedClassId,
+        targetYear?.name?.slice(0, 4) || '2024'
+      );
 
-    setImportedCount(count);
-    setIsImportComplete(true);
-    setShowConfirmModal(false);
-    onSuccess();
+      setImportedCount(count);
+      setIsImportComplete(true);
+      setShowConfirmModal(false);
+      onSuccess();
+    } catch (err) {
+      console.error('Error committing batch import:', err);
+      alert('Terjadi kesalahan saat menyimpan data ke Supabase.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const errorRows = validationResult?.rows.filter(r => r.status !== 'VALID') || [];
