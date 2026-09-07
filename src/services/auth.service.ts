@@ -20,14 +20,38 @@ export const authService = {
         return { user: null };
       }
 
-      // Fetch profile from Supabase
-      const { data: profile, error: profileError } = await supabase
+      // Fetch profile from Supabase (by ID or by Email)
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .maybeSingle();
 
       if (profileError) throw profileError;
+
+      // Fallback lookup by email if ID differed
+      if (!profile && session.user.email) {
+        const { data: profileByEmail } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', session.user.email.toLowerCase())
+          .maybeSingle();
+
+        if (profileByEmail) {
+          const oldId = profileByEmail.id;
+          profile = { ...profileByEmail, id: session.user.id };
+
+          // Synchronize profile ID in database asynchronously
+          try {
+            await supabase.from('profiles').update({ id: session.user.id }).eq('id', oldId);
+            await supabase.from('students').update({ id: session.user.id }).eq('id', oldId);
+            await supabase.from('lecturers').update({ id: session.user.id }).eq('id', oldId);
+          } catch (syncErr) {
+            console.warn('ID synchronization warning:', syncErr);
+          }
+        }
+      }
+
       if (!profile) return { user: null };
 
       let lecturerProfile: Lecturer | undefined;
