@@ -282,11 +282,6 @@ export const Login: React.FC = () => {
               </form>
 
               {/* Card Footer Help Note */}
-              <div className="pt-2 text-center">
-                <p className="text-[11px] text-slate-500 leading-tight">
-                  Butuh bantuan? Hubungi <span className="font-semibold text-[#2563EB] cursor-pointer hover:underline">administrator program studi Anda.</span>
-                </p>
-              </div>
             </div>
           </div>
         </div>
