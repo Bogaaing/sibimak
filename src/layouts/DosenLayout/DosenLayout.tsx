@@ -17,7 +17,8 @@ import {
   Menu,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { dosenService } from '../../services/dosen.service';
+import { dosenService, DosenNotificationItem } from '../../services/dosen.service';
+import { formatDate } from '../../lib/utils';
 
 export const DosenLayout: React.FC = () => {
   const { user, lecturerProfile, logout } = useAuth();
@@ -26,6 +27,8 @@ export const DosenLayout: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<DosenNotificationItem[]>([]);
   const [activeYearName, setActiveYearName] = useState<string>('Tahun Akademik 2026/2027 Ganjil');
   const [pendingConsultations, setPendingConsultations] = useState<number>(0);
 
@@ -43,9 +46,15 @@ export const DosenLayout: React.FC = () => {
         }
 
         if (lecturerId || user?.email) {
-          const reqs = await dosenService.getIndividualRequests(lecturerId, user?.email);
+          const [reqs, notifs] = await Promise.all([
+            dosenService.getIndividualRequests(lecturerId, user?.email),
+            dosenService.getNotifications(lecturerId, user?.email)
+          ]);
           const pending = reqs.filter(r => r.status === 'DIAJUKAN' || r.status === 'DIPROSES').length;
-          if (isMounted) setPendingConsultations(pending);
+          if (isMounted) {
+            setPendingConsultations(pending);
+            setNotifications(notifs);
+          }
         }
       } catch (err) {
         console.error('Error fetching layout metadata:', err);
@@ -343,15 +352,52 @@ export const DosenLayout: React.FC = () => {
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 stroke-[1.8]" />
               </div>
 
-              <button
-                title="Notifikasi"
-                className="relative p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-2xs"
-              >
-                <Bell className="w-4 h-4 stroke-[1.8]" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9.5px] font-bold flex items-center justify-center border-2 border-white shadow-2xs">
-                  3
-                </span>
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  title="Notifikasi"
+                  onClick={() => setIsNotifOpen(!isNotifOpen)}
+                  className="relative p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-2xs cursor-pointer"
+                >
+                  <Bell className="w-4 h-4 stroke-[1.8]" />
+                  {notifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9.5px] font-bold flex items-center justify-center border-2 border-white shadow-2xs">
+                      {notifications.length}
+                    </span>
+                  )}
+                </button>
+
+                {isNotifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200 shadow-lg z-50 p-3 space-y-2">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <span className="text-xs font-bold text-slate-900">Notifikasi</span>
+                      <span className="text-[10px] text-slate-400 font-semibold">{notifications.length} baru</span>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto space-y-1.5">
+                      {notifications.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-slate-400">
+                          Tidak ada notifikasi baru.
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            onClick={() => {
+                              setIsNotifOpen(false);
+                              navigate(notif.link);
+                            }}
+                            className="p-2 rounded-lg bg-slate-50 hover:bg-blue-50/60 transition-colors cursor-pointer space-y-0.5"
+                          >
+                            <p className="text-xs font-semibold text-slate-800">{notif.message}</p>
+                            <p className="text-[10px] text-slate-400 font-mono">{formatDate(notif.created_at, 'dd/MM/yyyy HH:mm')}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-xs font-bold text-slate-800 shadow-2xs">
                 <UserRound className="w-3.5 h-3.5 text-slate-600 stroke-[1.8]" />

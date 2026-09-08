@@ -340,7 +340,7 @@ export const dosenService = {
   },
 
   /**
-   * Update status of an individual guidance request
+   * Update status of an individual guidance request (Pure consultation workflow)
    */
   async updateIndividualRequestStatus(
     requestId: string,
@@ -356,9 +356,7 @@ export const dosenService = {
       };
 
       if (status === 'SELESAI') {
-        payload.validation_status = 'VALID';
         payload.completed_at = new Date().toISOString();
-        payload.validated_at = new Date().toISOString();
       }
 
       const { error } = await supabase
@@ -398,8 +396,7 @@ export const dosenService = {
           title: payload.title,
           initial_problem: payload.initial_problem,
           guidance_date: payload.guidance_date || new Date().toISOString().split('T')[0],
-          status: 'DIAJUKAN',
-          validation_status: 'PENDING'
+          status: 'DIAJUKAN'
         })
         .select(`
           *,
@@ -418,5 +415,43 @@ export const dosenService = {
       console.error('Unexpected error in createIndividualRequest:', err);
       throw err;
     }
+  },
+
+  /**
+   * Dynamically fetch notifications for Dosen PA:
+   * - New individual guidance consultation requests from students
+   */
+  async getNotifications(lecturerId?: string, lecturerEmail?: string): Promise<DosenNotificationItem[]> {
+    const notifs: DosenNotificationItem[] = [];
+    try {
+      const requests = await this.getIndividualRequests(lecturerId, lecturerEmail);
+      requests.forEach((req) => {
+        if (req.status === 'DIAJUKAN') {
+          const studentName = req.student?.profile?.full_name || 'Mahasiswa';
+          notifs.push({
+            id: `notif-ind-new-${req.id}`,
+            title: 'Permohonan Konsultasi Baru',
+            message: `Permohonan konsultasi baru dari ${studentName}.`,
+            link: '/dosen/bimbingan-individu',
+            created_at: req.created_at,
+            type: 'konsultasi',
+          });
+        }
+      });
+    } catch (err) {
+      console.warn('Error computing lecturer notifications:', err);
+    }
+
+    notifs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return notifs;
   }
 };
+
+export interface DosenNotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  link: string;
+  created_at: string;
+  type: 'konsultasi' | 'bimbingan_kelas';
+}

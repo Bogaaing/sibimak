@@ -53,24 +53,16 @@ export const formBatchDownloadService = {
 
     const studentIds = students.map((s) => s.id);
 
-    // 3. Fetch Class Guidance Participations with status VALID
+    // 3. Fetch Class Guidance Participations with status VALID (Form Bimbingan is strictly Class Guidance)
     const { data: rawParticipants } = await supabase
       .from('class_guidance_participants')
       .select('*, session:class_guidance_sessions(*)')
       .in('student_id', studentIds)
       .eq('validation_status', 'VALID');
 
-    // 4. Fetch Individual Guidance Requests with status VALID
-    const { data: rawIndividu } = await supabase
-      .from('individual_guidance_requests')
-      .select('*')
-      .in('student_id', studentIds)
-      .eq('validation_status', 'VALID');
-
     const participants = (rawParticipants || []) as any[];
-    const individuList = (rawIndividu || []) as any[];
 
-    // 5. Map student summaries
+    // 4. Map student summaries strictly from validated class guidance
     const summaries: ValidatedStudentSummary[] = [];
 
     for (const student of students) {
@@ -89,19 +81,6 @@ export const formBatchDownloadService = {
           topic_description: p.session?.topic_description || '',
           validation_status: 'VALID',
           type: 'KELAS',
-        });
-      }
-
-      // Individual requests
-      const stdInds = individuList.filter((i) => i.student_id === student.id);
-      for (const i of stdInds) {
-        records.push({
-          id: i.id,
-          session_date: i.guidance_date || i.created_at.split('T')[0],
-          title: i.title,
-          topic_description: i.initial_problem,
-          validation_status: 'VALID',
-          type: 'INDIVIDU',
         });
       }
 

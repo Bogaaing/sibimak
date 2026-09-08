@@ -240,8 +240,7 @@ export const mahasiswaService = {
         academic_year_id: payload.academic_year_id,
         title: payload.title,
         initial_problem: payload.initial_problem,
-        status: 'DIAJUKAN',
-        validation_status: 'PENDING'
+        status: 'DIAJUKAN'
       })
       .select(`
         *,
@@ -347,8 +346,8 @@ export const mahasiswaService = {
             id: `notif-ind-${req.id}`,
             title: `Konsultasi: ${req.title}`,
             message: req.status === 'SELESAI' 
-              ? 'Konsultasi individu telah selesai divalidasi oleh Dosen PA.' 
-              : 'Dosen PA telah memberikan arahan atau respons pada pengajuan konsultasi Anda.',
+              ? 'Konsultasi individu telah selesai ditanggapi oleh Dosen PA.' 
+              : 'Dosen PA memberikan respons pada konsultasi Anda.',
             link: '/mahasiswa/konsultasi',
             created_at: req.completed_at || req.created_at,
             type: 'konsultasi'

@@ -340,7 +340,9 @@ export const RiwayatBimbingan: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-center">
-                      {item.isValidated ? (
+                      {item.type === 'INDIVIDU' ? (
+                        <span className="text-[11px] text-slate-400 font-medium">—</span>
+                      ) : item.isValidated ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <CheckCircle2 className="w-3 h-3" />
                           Valid
@@ -353,13 +355,23 @@ export const RiwayatBimbingan: React.FC = () => {
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                      <Link
-                        to={`/report/formulir?studentId=${item.studentId}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs transition-colors"
-                      >
-                        <FileText className="w-3.5 h-3.5 text-slate-500 stroke-[1.8]" />
-                        <span>Cetak Form</span>
-                      </Link>
+                      {item.type === 'INDIVIDU' ? (
+                        <Link
+                          to="/dosen/bimbingan-individu"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 hover:border-blue-300 bg-blue-50/50 hover:bg-blue-50 text-xs font-bold text-blue-700 shadow-2xs transition-colors"
+                        >
+                          <MessagesSquare className="w-3.5 h-3.5 text-blue-600 stroke-[1.8]" />
+                          <span>Buka Chat</span>
+                        </Link>
+                      ) : (
+                        <Link
+                          to={`/report/formulir?studentId=${item.studentId}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs transition-colors"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-slate-500 stroke-[1.8]" />
+                          <span>Cetak Form</span>
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))

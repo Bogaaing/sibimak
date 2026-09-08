@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { dosenService } from '../../../services/dosen.service';
+import { supabase } from '../../../lib/supabase';
 import { 
   Plus, 
   MessageSquare, 
   FileText, 
   Info, 
-  Paperclip, 
   Send, 
   MoreVertical,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Select } from '../../../components/ui/Select';
@@ -117,6 +119,32 @@ export const BimbinganIndividuList: React.FC = () => {
     loadAllData();
   }, [lecturerId, lecturerEmail]);
 
+  // Realtime messages subscription for selected consultation
+  useEffect(() => {
+    if (!selectedRequest?.id) return;
+
+    const channel = supabase
+      .channel(`dosen-guidance-messages-${selectedRequest.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'guidance_messages',
+          filter: `individual_guidance_id=eq.${selectedRequest.id}`
+        },
+        async () => {
+          const msgs = await dosenService.getMessages(selectedRequest.id);
+          setMessages(msgs);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedRequest?.id]);
+
   const handleSelectRequest = async (req: IndividualGuidanceRequest) => {
     setSelectedRequest(req);
     setStatusForm({
@@ -138,14 +166,41 @@ export const BimbinganIndividuList: React.FC = () => {
     e.preventDefault();
     if (!selectedRequest || !user || !newMessage.trim()) return;
 
+    const text = newMessage.trim();
+    setNewMessage('');
+
     try {
-      const msg = await dosenService.sendMessage(selectedRequest.id, user.id, newMessage.trim());
+      const msg = await dosenService.sendMessage(selectedRequest.id, user.id, text);
       if (msg) {
         setMessages((prev) => [...prev, msg]);
-        setNewMessage('');
+      }
+
+      // If status is still DIAJUKAN, auto advance to DIPROSES
+      if (selectedRequest.status === 'DIAJUKAN') {
+        await dosenService.updateIndividualRequestStatus(selectedRequest.id, 'DIPROSES');
+        const updatedRequests = await dosenService.getIndividualRequests(lecturerId, lecturerEmail);
+        setRequests(updatedRequests);
+        const refreshed = updatedRequests.find((r) => r.id === selectedRequest.id) || null;
+        setSelectedRequest(refreshed);
       }
     } catch (err: any) {
       alert(`Gagal mengirim pesan: ${err?.message || 'Terjadi kesalahan'}`);
+    }
+  };
+
+  const handleMarkAsResolved = async () => {
+    if (!selectedRequest) return;
+    const confirm = window.confirm('Apakah Anda yakin ingin menyelesaikan konsultasi ini?');
+    if (!confirm) return;
+
+    try {
+      await dosenService.updateIndividualRequestStatus(selectedRequest.id, 'SELESAI');
+      const updatedRequests = await dosenService.getIndividualRequests(lecturerId, lecturerEmail);
+      setRequests(updatedRequests);
+      const refreshed = updatedRequests.find((r) => r.id === selectedRequest.id) || null;
+      setSelectedRequest(refreshed);
+    } catch (err: any) {
+      alert(`Gagal menyelesaikan konsultasi: ${err?.message || 'Terjadi kesalahan'}`);
     }
   };
 
@@ -382,10 +437,9 @@ export const BimbinganIndividuList: React.FC = () => {
                         {req.title}
                       </h3>
 
-                      <div className="flex justify-end pt-1">
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {formatDate(req.created_at, 'dd/MM/yyyy HH:mm')}
-                        </span>
+                      <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400 font-mono">
+                        <span>Tanggal: {formatDate(req.created_at, 'dd/MM/yyyy')}</span>
+                        <span>Aktif: {formatDate(req.completed_at || req.created_at, 'dd/MM HH:mm')}</span>
                       </div>
                     </div>
                   );
@@ -426,39 +480,50 @@ export const BimbinganIndividuList: React.FC = () => {
             <>
               {/* Top Header Information & Actions */}
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-slate-100">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200 uppercase">
-                      STATUS: {selectedRequest.status}
-                    </span>
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {renderStatusBadge(selectedRequest.status)}
                     <span className="text-xs text-slate-500 font-medium">
                       Kelas {selectedRequest.student?.class?.name || '05SIFM003'}
                     </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-xs text-slate-500 font-medium">
+                      Prodi {selectedRequest.student?.class?.study_program || 'Sistem Informasi'}
+                    </span>
                   </div>
 
-                  <h2 className="text-sm sm:text-[15px] font-bold text-slate-900 uppercase tracking-tight pt-1">
+                  <h2 className="text-base font-bold text-slate-900 uppercase tracking-tight">
                     {selectedRequest.title}
                   </h2>
 
-                  <p className="text-xs text-slate-600 font-medium">
-                    Mahasiswa: <strong className="text-slate-900 uppercase">{selectedRequest.student?.profile?.full_name}</strong> ({selectedRequest.student?.nim})
-                  </p>
+                  <div className="text-xs text-slate-600 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span>Mahasiswa: <strong className="text-slate-900 uppercase">{selectedRequest.student?.profile?.full_name}</strong></span>
+                    <span className="text-slate-300">•</span>
+                    <span className="font-mono text-slate-500">NIM: {selectedRequest.student?.nim}</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-500">Diajukan: {formatDate(selectedRequest.created_at, 'dd MMMM yyyy HH:mm')}</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {selectedRequest.status !== 'SELESAI' && selectedRequest.status !== 'DITOLAK' && (
+                    <button
+                      type="button"
+                      onClick={handleMarkAsResolved}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.2]" />
+                      <span>Tandai Selesai</span>
+                    </button>
+                  )}
+
                   <Button
                     onClick={() => setIsUpdateModalOpen(true)}
+                    variant="outline"
                     className="text-xs font-bold py-2 px-3.5 shadow-2xs"
                   >
-                    Update Status / Hasil
+                    Ubah Status
                   </Button>
-
-                  <button
-                    title="Opsi Lainnya"
-                    className="p-2 rounded-lg border border-slate-200 hover:border-slate-300 text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-50 transition-colors shadow-2xs"
-                  >
-                    <MoreVertical className="w-4 h-4 stroke-[1.8]" />
-                  </button>
                 </div>
               </div>
 
@@ -470,56 +535,65 @@ export const BimbinganIndividuList: React.FC = () => {
                     PERMASALAHAN / HAL YANG DIKONSULTASIKAN
                   </span>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed font-normal pt-1">
+                <p className="text-xs text-slate-700 leading-relaxed font-normal pt-1 whitespace-pre-wrap">
                   {selectedRequest.initial_problem}
                 </p>
               </div>
 
-              {/* Section 2: Arahan / Rencana Tindak Lanjut */}
-              <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100 space-y-1.5">
-                <div className="flex items-center gap-2 text-blue-900">
-                  <Info className="w-4 h-4 text-blue-600 stroke-[1.8]" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider">
-                    ARAHAN / RENCANA TINDAK LANJUT
-                  </span>
+              {/* Section 2: Arahan / Rencana Tindak Lanjut (jika ada) */}
+              {selectedRequest.action_plan && (
+                <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100 space-y-1.5">
+                  <div className="flex items-center gap-2 text-blue-900">
+                    <Info className="w-4 h-4 text-blue-600 stroke-[1.8]" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">
+                      ARAHAN / RENCANA TINDAK LANJUT
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed font-normal pt-1 whitespace-pre-wrap">
+                    {selectedRequest.action_plan}
+                  </p>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed font-normal pt-1">
-                  {selectedRequest.action_plan || 'Belum ada arahan tindak lanjut yang diberikan. Silakan gunakan tombol Update Status / Hasil untuk mengisi arahan.'}
-                </p>
-              </div>
+              )}
 
-              {/* Section 3: Ruang Diskusi & Catatan Progres */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  <MessageSquare className="w-4 h-4 text-blue-600 stroke-[1.8]" />
-                  <span>RUANG DISKUSI & CATATAN PROGRES</span>
+              {/* Section 3: Ruang Percakapan Konsultasi */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    <MessageSquare className="w-4 h-4 text-blue-600 stroke-[1.8]" />
+                    <span>PERCAKAPAN KONSULTASI ({messages.length})</span>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    Konsultasi privat dua arah
+                  </span>
                 </div>
 
                 {/* Conversation Timeline */}
-                <div className="p-4 rounded-xl bg-white border border-slate-200/80 space-y-3.5 min-h-[160px] max-h-[280px] overflow-y-auto shadow-2xs">
+                <div className="p-4 rounded-xl bg-slate-50/40 border border-slate-200/80 space-y-3.5 min-h-[170px] max-h-[300px] overflow-y-auto shadow-2xs">
                   {messages.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-slate-400">
-                      Belum ada percakapan. Tulis pesan pertama di bawah.
+                    <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                      Belum ada percakapan.
                     </div>
                   ) : (
                     messages.map((m) => {
                       const isMe = m.sender_profile_id === user?.id;
                       const senderName = m.sender?.full_name || (isMe ? (user?.full_name || 'Dosen PA') : (selectedRequest.student?.profile?.full_name || 'Mahasiswa'));
-                      const senderRole = isMe ? 'dosen' : 'mahasiswa';
+                      const senderRole = isMe ? 'Dosen PA' : 'Mahasiswa';
 
                       return (
                         <div
                           key={m.id}
                           className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                         >
-                          <div className="text-[10px] text-slate-400 font-medium mb-1">
-                            {senderName} ({senderRole}) {formatDate(m.created_at, 'dd/MM HH:mm')}
+                          <div className="text-[10px] text-slate-500 font-medium mb-1 flex items-center gap-1.5">
+                            <span className="font-bold">{senderName}</span>
+                            <span className="text-[9.5px] px-1.5 py-0.2 rounded bg-slate-200/70 text-slate-600 font-semibold">{senderRole}</span>
+                            <span className="text-slate-400 font-mono text-[10px]">{formatDate(m.created_at, 'dd/MM HH:mm')}</span>
                           </div>
                           <div
-                            className={`p-3 text-xs leading-relaxed max-w-[85%] ${
+                            className={`p-3 text-xs leading-relaxed max-w-[85%] whitespace-pre-wrap ${
                               isMe
-                                ? 'bg-blue-600 text-white rounded-xl shadow-2xs'
-                                : 'bg-slate-50 border border-slate-200/80 text-slate-800 rounded-xl'
+                                ? 'bg-blue-600 text-white rounded-2xl rounded-tr-xs shadow-2xs'
+                                : 'bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs shadow-2xs'
                             }`}
                           >
                             {m.message}
@@ -540,15 +614,7 @@ export const BimbinganIndividuList: React.FC = () => {
                     className="flex-1 py-2.5 px-3.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors placeholder:text-slate-400 font-medium shadow-2xs"
                   />
 
-                  <button
-                    type="button"
-                    title="Lampirkan Dokumen"
-                    className="p-2.5 text-slate-400 hover:text-slate-600 border border-slate-200 hover:border-slate-300 rounded-lg bg-white hover:bg-slate-50 transition-colors shadow-2xs"
-                  >
-                    <Paperclip className="w-4 h-4 stroke-[1.8]" />
-                  </button>
-
-                  <Button type="submit" className="gap-1.5 text-xs font-bold py-2.5 px-4 shadow-2xs">
+                  <Button type="submit" disabled={!newMessage.trim()} className="gap-1.5 text-xs font-bold py-2.5 px-4 shadow-2xs">
                     <Send className="w-3.5 h-3.5 stroke-[2]" />
                     <span>Kirim</span>
                   </Button>

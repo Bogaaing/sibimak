@@ -83,25 +83,6 @@ export const FormulirBimbinganPrint: React.FC = () => {
               });
             });
           }
-
-          // 4. Fetch Individual Guidance Requests for this student
-          const { data: indReqs } = await supabase
-            .from('individual_guidance_requests')
-            .select('*')
-            .eq('student_id', std.id);
-
-          if (indReqs && indReqs.length > 0) {
-            indReqs.forEach((ir) => {
-              records.push({
-                id: ir.id,
-                session_date: ir.guidance_date || ir.created_at.split('T')[0],
-                title: ir.title,
-                topic_description: ir.initial_problem,
-                validation_status: ir.validation_status,
-                type: 'INDIVIDU'
-              });
-            });
-          }
         }
 
         if (isMounted) {
