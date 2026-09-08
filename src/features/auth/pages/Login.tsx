@@ -165,31 +165,31 @@ export const Login: React.FC = () => {
 
             {/* AUTHENTICATION CARD */}
             <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.10)] p-6 sm:p-7 space-y-4">
-              {/* Role Switcher Pill (42px) */}
-              <div className="h-[42px] p-1 bg-[#F1F5F9] rounded-xl border border-slate-200/70 flex items-center gap-1">
+              {/* Role Switcher - Modern Rounded Pill Segmented Control */}
+              <div className="h-[48px] p-1.5 bg-[#F1F5F9] rounded-[22px] border border-slate-200/80 flex items-center gap-1.5 transition-all">
                 <button
                   type="button"
                   onClick={() => handleRoleChange('mahasiswa')}
-                  className={`h-full flex-1 flex items-center justify-center gap-1.5 px-3 rounded-lg text-xs font-semibold transition-all select-none ${
+                  className={`h-full flex-1 flex items-center justify-center gap-2 px-3 rounded-full text-xs font-semibold transition-all duration-300 ease-in-out select-none ${
                     activeRole === 'mahasiswa'
-                      ? 'bg-[#2563EB] text-white shadow-2xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-[#2563EB] text-white shadow-[0_2px_8px_rgba(37,99,235,0.28)] font-bold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 bg-transparent'
                   }`}
                 >
-                  <UserRound className="w-3.5 h-3.5" />
+                  <UserRound className="w-5 h-5 shrink-0" />
                   <span>Mahasiswa</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleRoleChange('dosen')}
-                  className={`h-full flex-1 flex items-center justify-center gap-1.5 px-3 rounded-lg text-xs font-semibold transition-all select-none ${
+                  className={`h-full flex-1 flex items-center justify-center gap-2 px-3 rounded-full text-xs font-semibold transition-all duration-300 ease-in-out select-none ${
                     activeRole === 'dosen'
-                      ? 'bg-[#2563EB] text-white shadow-2xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-[#2563EB] text-white shadow-[0_2px_8px_rgba(37,99,235,0.28)] font-bold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 bg-transparent'
                   }`}
                 >
-                  <UserRound className="w-3.5 h-3.5" />
+                  <UserRound className="w-5 h-5 shrink-0" />
                   <span>Dosen</span>
                 </button>
               </div>
